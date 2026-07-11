@@ -1,0 +1,1613 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>AI-CFCID — Customer Feedback Classifier & Insights Dashboard</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#0f1117;--bg2:#161920;--surf:#1c2030;--surf2:#222738;--surf3:#2a3045;
+  --border:#2e3650;--border2:#3a4468;
+  --text:#e8eaf0;--text2:#9ba3be;--text3:#5a6380;
+  --blue:#3b82f6;--blue2:#60a5fa;--blue3:#1e3a6e;--blue4:#0f1e3d;
+  --glow:rgba(59,130,246,0.15);--glow2:rgba(59,130,246,0.3);
+  --green:#22c55e;--red:#ef4444;--amber:#f59e0b;--teal:#14b8a6;--pink:#f472b6;
+  --r:12px;--rsm:8px;
+}
+body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;background:var(--bg);color:var(--text);font-size:14px;line-height:1.5;min-height:100vh}
+::-webkit-scrollbar{width:6px;height:6px}
+::-webkit-scrollbar-track{background:var(--bg2)}
+::-webkit-scrollbar-thumb{background:var(--border2);border-radius:3px}
+/* TOP BAR */
+.topbar{background:rgba(22,25,32,0.97);backdrop-filter:blur(12px);height:60px;display:flex;align-items:center;justify-content:space-between;padding:0 2rem;position:sticky;top:0;z-index:300;border-bottom:1px solid var(--border);box-shadow:0 4px 24px rgba(0,0,0,.5)}
+.brand{display:flex;align-items:center;gap:12px;cursor:pointer}
+.brand-icon{width:36px;height:36px;background:linear-gradient(135deg,#3b82f6,#1d4ed8);border-radius:10px;display:flex;align-items:center;justify-content:center;box-shadow:0 0 16px var(--glow2)}
+.brand-icon svg{width:18px;height:18px;stroke:#fff;fill:none;stroke-width:2.5;stroke-linecap:round}
+.brand-text{display:flex;flex-direction:column;line-height:1.1}
+.brand-short{font-size:14px;font-weight:800;color:#fff;letter-spacing:.02em}
+.brand-long{font-size:9px;color:var(--text3);letter-spacing:.04em;text-transform:uppercase;margin-top:1px}
+.topnav{display:flex;gap:2px}
+.tnav{background:none;border:none;color:var(--text2);font-size:12px;font-weight:500;padding:7px 14px;border-radius:8px;cursor:pointer;transition:all .18s;font-family:inherit}
+.tnav:hover{background:var(--surf2);color:var(--text)}
+.tnav.active{background:var(--blue3);color:var(--blue2);box-shadow:0 0 12px var(--glow)}
+.topright{display:flex;align-items:center;gap:12px}
+.live-pill{display:flex;align-items:center;gap:6px;background:rgba(34,197,94,.1);border:1px solid rgba(34,197,94,.25);color:#4ade80;font-size:10px;font-weight:700;padding:5px 12px;border-radius:20px}
+.ldot{width:6px;height:6px;border-radius:50%;background:#4ade80;animation:blink 1.4s ease-in-out infinite}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:.3}}
+.tclock{font-size:11px;color:var(--text3);min-width:70px;text-align:right}
+/* PAGES */
+.page{display:none}
+.page.active{display:block;animation:fadeUp .25s ease}
+@keyframes fadeUp{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:translateY(0)}}
+.wrap{max-width:1440px;margin:0 auto;padding:2rem}
+/* HERO */
+.page-hero{margin-bottom:2rem;padding-bottom:1.25rem;border-bottom:1px solid var(--border)}
+.page-hero h1{font-size:20px;font-weight:700;color:#fff;margin-bottom:4px}
+.page-hero p{font-size:12px;color:var(--text3)}
+/* LABEL */
+.slabel{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:var(--text3);margin-bottom:1rem;display:flex;align-items:center;gap:10px}
+.slabel::after{content:"";flex:1;height:1px;background:var(--border)}
+/* CARDS */
+.card{background:var(--surf);border:1px solid var(--border);border-radius:var(--r);padding:1.4rem;transition:border-color .2s}
+.card:hover{border-color:var(--border2)}
+.card h4{font-size:11px;font-weight:700;color:var(--text2);margin-bottom:1.1rem;text-transform:uppercase;letter-spacing:.06em}
+.card-glow{box-shadow:0 0 30px var(--glow)}
+.ch{position:relative}
+/* METRICS */
+.mg6{display:grid;grid-template-columns:repeat(6,1fr);gap:10px;margin-bottom:1.5rem}
+.mg4{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:1.5rem}
+.mc{background:var(--surf);border:1px solid var(--border);border-radius:var(--r);padding:1.1rem 1.2rem;position:relative;overflow:hidden;transition:all .2s}
+.mc::before{content:"";position:absolute;top:0;left:0;right:0;height:2px;background:var(--accent,var(--blue));opacity:.7}
+.mc:hover{border-color:var(--border2);transform:translateY(-1px)}
+.mc .top{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:10px}
+.mc .ico{width:36px;height:36px;border-radius:10px;display:flex;align-items:center;justify-content:center}
+.mc .delta{font-size:10px;font-weight:600;padding:3px 8px;border-radius:20px}
+.mc .val{font-size:28px;font-weight:700;line-height:1;margin-bottom:3px;letter-spacing:-.02em}
+.mc .lbl{font-size:11px;color:var(--text3);font-weight:500}
+.mc .sub{font-size:10px;color:var(--text3);margin-top:8px;padding-top:8px;border-top:1px solid var(--border)}
+/* GRIDS */
+.g2{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+.g3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:14px}
+.g3x{display:grid;grid-template-columns:2fr 1fr;gap:14px}
+.g4{display:grid;grid-template-columns:repeat(4,1fr);gap:12px}
+.g5{display:grid;grid-template-columns:repeat(5,1fr);gap:10px}
+.gap{margin-bottom:1.5rem}
+/* PILLS */
+.pill{display:inline-flex;align-items:center;padding:2px 9px;border-radius:20px;font-size:10px;font-weight:600;white-space:nowrap}
+.p-pos{background:rgba(34,197,94,.12);color:#4ade80;border:1px solid rgba(34,197,94,.2)}
+.p-neu{background:rgba(59,130,246,.12);color:#60a5fa;border:1px solid rgba(59,130,246,.2)}
+.p-neg{background:rgba(239,68,68,.12);color:#f87171;border:1px solid rgba(239,68,68,.2)}
+.p-low{background:rgba(34,197,94,.12);color:#4ade80;border:1px solid rgba(34,197,94,.2)}
+.p-med{background:rgba(245,158,11,.12);color:#fbbf24;border:1px solid rgba(245,158,11,.2)}
+.p-high{background:rgba(239,68,68,.15);color:#f87171;border:1px solid rgba(239,68,68,.25)}
+.p-cat{background:rgba(167,139,250,.1);color:#c4b5fd;border:1px solid rgba(167,139,250,.2);font-size:9px}
+.p-m{background:rgba(59,130,246,.12);color:#60a5fa;border:1px solid rgba(59,130,246,.2)}
+.p-f{background:rgba(244,114,182,.12);color:#f9a8d4;border:1px solid rgba(244,114,182,.2)}
+/* BARS */
+.brow{display:flex;align-items:center;gap:10px;padding:7px 0;border-bottom:1px solid var(--border)}
+.brow:last-child{border-bottom:none}
+.bdot{width:8px;height:8px;border-radius:50%;flex-shrink:0}
+.bname{flex:1;font-size:12px;color:var(--text2)}
+.bbg{width:120px;height:5px;background:var(--surf3);border-radius:3px;overflow:hidden}
+.bfill{height:100%;border-radius:3px}
+.bnum{font-size:11px;font-weight:600;color:var(--text);min-width:28px;text-align:right}
+.bpct{font-size:10px;color:var(--text3);min-width:34px;text-align:right}
+/* AGE */
+.arow{display:flex;align-items:center;gap:10px;padding:6px 0}
+.albl{font-size:11px;color:var(--text2);min-width:48px}
+.abg{flex:1;height:14px;background:var(--surf3);border-radius:4px;overflow:hidden}
+.afill{height:100%;border-radius:4px;background:linear-gradient(90deg,#3b82f6,#60a5fa)}
+.anum{font-size:10px;color:var(--text3);min-width:65px;text-align:right}
+/* PROGRESS */
+.prog{margin-bottom:10px}
+.proghd{display:flex;justify-content:space-between;font-size:11px;color:var(--text2);margin-bottom:4px}
+.progbg{height:6px;background:var(--surf3);border-radius:4px;overflow:hidden}
+.progfill{height:100%;border-radius:4px}
+/* HEATMAP */
+.heatmap-wrap{overflow-x:auto}
+.hmap{border-collapse:collapse;width:100%;min-width:520px}
+.hmap th{padding:9px 14px;font-size:10px;text-transform:uppercase;letter-spacing:.07em;color:var(--text3);font-weight:700;border-bottom:1px solid var(--border);text-align:left}
+.hmap th:not(:first-child){text-align:center}
+.hmap td{padding:8px 14px;border-bottom:1px solid var(--border);font-size:12px;color:var(--text2)}
+.hmap tr:last-child td{border-bottom:none}
+.hmap tr:hover td{background:var(--surf2)}
+.hcell{display:flex;align-items:center;justify-content:center;flex-direction:column;border-radius:8px;padding:8px 10px;transition:transform .15s}
+.hcell:hover{transform:scale(1.08)}
+.hcell .hval{font-size:18px;font-weight:700;line-height:1}
+.hcell .hlbl{font-size:9px;margin-top:2px;opacity:.7;text-transform:uppercase;letter-spacing:.05em}
+/* URGENT */
+.urg-item{display:flex;gap:12px;padding:13px;background:rgba(239,68,68,.05);border:1px solid rgba(239,68,68,.15);border-radius:10px;margin-bottom:8px;transition:all .2s}
+.urg-item:last-child{margin-bottom:0}
+.urg-item:hover{background:rgba(239,68,68,.09);border-color:rgba(239,68,68,.3)}
+.urg-num{width:32px;height:32px;border-radius:8px;background:rgba(239,68,68,.15);color:#f87171;font-size:13px;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.urg-body{flex:1;min-width:0}
+.urg-name{font-size:12px;font-weight:600;color:var(--text);margin-bottom:3px}
+.urg-text{font-size:11px;color:var(--text2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-bottom:6px}
+.urg-meta{display:flex;gap:6px;flex-wrap:wrap}
+/* TABLE */
+.twrap{overflow-x:auto}
+table.dt{width:100%;border-collapse:collapse}
+table.dt th{padding:10px 12px;font-size:10px;text-transform:uppercase;letter-spacing:.06em;color:var(--text3);font-weight:700;border-bottom:1px solid var(--border);background:var(--surf2);text-align:left;white-space:nowrap;cursor:pointer;user-select:none}
+table.dt th:hover{color:var(--text2)}
+table.dt td{padding:9px 12px;border-bottom:1px solid var(--border);font-size:12px;vertical-align:middle;color:var(--text2)}
+table.dt tr:last-child td{border-bottom:none}
+table.dt tr:hover td{background:var(--surf2)}
+table.dt tr.fb-row:hover td{background:#1e3a6e;cursor:pointer}
+table.dt tr.fb-row:hover .td-name{color:var(--blue2)!important}
+.td-name{font-weight:600;color:var(--text)!important;white-space:nowrap}
+.td-fb{max-width:300px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.td-id{color:var(--text3)!important;font-size:11px;font-family:monospace}
+/* FILTER */
+.fbar{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px;align-items:center}
+.fbar select,.fbar input{padding:7px 11px;border:1px solid var(--border);border-radius:var(--rsm);font-size:12px;background:var(--surf2);color:var(--text);font-family:inherit;outline:none;transition:border .15s}
+.fbar select:focus,.fbar input:focus{border-color:var(--blue)}
+.fbar input{min-width:230px}
+.fcount{font-size:11px;color:var(--text3);margin-left:auto}
+.hl{background:rgba(59,130,246,.25);color:var(--blue2);border-radius:3px;padding:0 2px}
+/* PAGINATION */
+.pagination{display:flex;align-items:center;justify-content:space-between;margin-top:12px;padding-top:12px;border-top:1px solid var(--border);font-size:11px;color:var(--text3)}
+.pgbtns{display:flex;gap:4px;align-items:center}
+.pgbtn{padding:5px 11px;border:1px solid var(--border);border-radius:6px;background:var(--surf2);font-size:11px;cursor:pointer;font-family:inherit;color:var(--text2);transition:all .15s}
+.pgbtn:hover:not(:disabled){background:var(--surf3);color:var(--text)}
+.pgbtn.active{background:var(--blue);color:#fff;border-color:var(--blue)}
+.pgbtn:disabled{opacity:.3;cursor:not-allowed}
+/* ANALYZE */
+.abox{background:var(--surf);border:1px solid var(--border);border-radius:var(--r);padding:1.4rem;margin-bottom:1rem}
+.abox h3{font-size:14px;font-weight:600;color:var(--text);margin-bottom:.75rem}
+textarea{width:100%;min-height:90px;border:1px solid var(--border);border-radius:var(--rsm);padding:10px 13px;font-size:13px;font-family:inherit;resize:vertical;outline:none;background:var(--surf2);color:var(--text);transition:border .15s}
+textarea:focus{border-color:var(--blue);box-shadow:0 0 0 3px var(--glow)}
+.btnrow{display:flex;gap:8px;margin-top:10px;align-items:center;flex-wrap:wrap}
+.btn{padding:8px 18px;border-radius:var(--rsm);border:1px solid var(--border);font-size:12px;font-weight:600;cursor:pointer;background:var(--surf2);color:var(--text2);font-family:inherit;transition:all .18s}
+.btn:hover{background:var(--surf3);color:var(--text);border-color:var(--border2)}
+.btn-p{background:linear-gradient(135deg,#3b82f6,#1d4ed8);color:#fff;border-color:transparent;box-shadow:0 0 16px var(--glow)}
+.btn-p:hover{box-shadow:0 0 24px var(--glow2);transform:translateY(-1px)}
+.btn-p:disabled{opacity:.5;cursor:not-allowed;transform:none}
+.spin{display:inline-block;width:13px;height:13px;border:2px solid rgba(255,255,255,.3);border-top-color:#fff;border-radius:50%;animation:sp .6s linear infinite;vertical-align:middle;margin-right:5px}
+@keyframes sp{to{transform:rotate(360deg)}}
+.rcard{background:var(--surf);border:1px solid var(--border2);border-radius:var(--r);padding:1.4rem;margin-top:.75rem;box-shadow:0 0 24px var(--glow)}
+.rrow{display:flex;gap:1.5rem;flex-wrap:wrap;margin-bottom:1.1rem}
+.ri label{font-size:9px;text-transform:uppercase;letter-spacing:.08em;color:var(--text3);font-weight:700;display:block;margin-bottom:5px}
+.rbox{font-size:12px;color:var(--text2);line-height:1.7;padding:10px 13px;background:var(--surf2);border-radius:var(--rsm);border:1px solid var(--border)}
+.samp-row{display:flex;gap:7px;flex-wrap:wrap;margin-bottom:1rem;align-items:center}
+/* DEPT */
+.dcard{background:var(--surf);border:1px solid var(--border);border-radius:var(--r);padding:1.1rem;transition:all .2s}
+.dcard:hover{border-color:var(--border2)}
+.dcard .dname{font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--text3);margin-bottom:5px}
+.dcard .dscore{font-size:24px;font-weight:700;line-height:1;margin-bottom:3px}
+.dcard .dsub{font-size:10px;color:var(--text3);margin-bottom:8px}
+.dbarbg{height:4px;background:var(--surf3);border-radius:2px;overflow:hidden;margin-bottom:8px}
+.dbarfill{height:100%;border-radius:2px}
+.dbadge{font-size:9px;font-weight:600;padding:3px 8px;border-radius:20px;display:inline-block}
+/* ABOUT */
+.about-hero{background:linear-gradient(135deg,var(--surf) 0%,var(--blue4) 100%);border:1px solid var(--border);border-radius:16px;padding:2.5rem;margin-bottom:1.5rem;position:relative;overflow:hidden}
+.about-hero::before{content:"";position:absolute;top:-60px;right:-60px;width:220px;height:220px;background:radial-gradient(circle,var(--glow2),transparent 70%);pointer-events:none}
+.about-hero h2{font-size:20px;font-weight:800;color:#fff;margin-bottom:6px}
+.about-hero .sub{font-size:11px;color:var(--text3);margin-bottom:1.5rem;text-transform:uppercase;letter-spacing:.06em}
+.team-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:1.5rem}
+.team-card{background:var(--surf);border:1px solid var(--border);border-radius:var(--r);padding:1.5rem;text-align:center;transition:all .2s;position:relative;overflow:hidden}
+.team-card::before{content:"";position:absolute;top:0;left:0;right:0;height:3px;background:linear-gradient(90deg,#3b82f6,#a78bfa)}
+.team-card:hover{border-color:var(--border2);transform:translateY(-3px);box-shadow:0 8px 32px rgba(0,0,0,.3)}
+.team-avatar{width:64px;height:64px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:22px;font-weight:700;color:#fff;margin:0 auto 12px}
+.team-name{font-size:13px;font-weight:700;color:var(--text);margin-bottom:4px}
+
+.proj-card{background:var(--surf);border:1px solid var(--border);border-radius:var(--r);padding:1.4rem}
+.proj-card h4{font-size:13px;font-weight:700;color:var(--text);margin-bottom:.85rem}
+.proj-card p{font-size:12px;color:var(--text2);line-height:1.8;margin-bottom:.75rem}
+.tech-tags{display:flex;gap:7px;flex-wrap:wrap;margin-top:.75rem}
+.tech-tag{background:var(--surf2);border:1px solid var(--border);color:var(--text3);font-size:10px;padding:4px 10px;border-radius:6px;font-weight:500}
+/* FOOTER */
+.footer{background:var(--surf);border-top:1px solid var(--border);padding:14px 2rem;font-size:10px;color:var(--text3);display:flex;justify-content:space-between;align-items:center;margin-top:2rem}
+.footer-brand{font-weight:700;color:var(--blue2);font-size:11px}
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div class="brand" id="brand-link">
+    <div class="brand-icon"><svg viewBox="0 0 16 16"><path d="M2 8h12M8 2l6 6-6 6"/></svg></div>
+    <div class="brand-text">
+      <span class="brand-short">AI-CFCID</span>
+      <span class="brand-long">Customer Feedback Classifier &amp; Insights Dashboard</span>
+    </div>
+  </div>
+  <div class="topnav">
+    <button class="tnav active" id="nav-overview">Overview</button>
+    <button class="tnav" id="nav-feedback">Feedback Data</button>
+    <button class="tnav" id="nav-demographics">Demographics</button>
+    <button class="tnav" id="nav-urgency">Urgency</button>
+    <button class="tnav" id="nav-analyze">Analyze</button>
+    <button class="tnav" id="nav-edit">Edit Data</button>
+    <button class="tnav" id="nav-about">About</button>
+    <button class="tnav" id="nav-setup" style="color:#fbbf24">Setup Guide</button>
+  </div>
+  <div class="topright">
+    <div class="live-pill"><div class="ldot"></div><span id="total-pill">200 RECORDS</span></div>
+    <span class="tclock" id="clock"></span>
+  </div>
+</div>
+
+<!-- OVERVIEW -->
+<div class="page active" id="page-overview"><div class="wrap">
+  <div class="page-hero">
+    <h1>AI-Powered Customer Feedback Classifier &amp; Insights Dashboard</h1>
+    <p id="hero-sub">200 labeled records &middot; 9 categories &middot; 3-tier urgency &middot; Zero-shot LLM classification via Claude API</p>
+  </div>
+  <div class="slabel">Key performance indicators</div>
+  <div class="mg6">
+    <div class="mc" style="--accent:#3b82f6"><div class="top"><div class="ico" style="background:rgba(59,130,246,.12)"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#60a5fa" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg></div><span class="delta" style="background:rgba(59,130,246,.12);color:#60a5fa">Total</span></div><div class="val" style="color:#60a5fa" id="kpi-total">200</div><div class="lbl">Total Responses</div><div class="sub">Across 9 categories</div></div>
+    <div class="mc" style="--accent:#22c55e"><div class="top"><div class="ico" style="background:rgba(34,197,94,.12)"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#4ade80" stroke-width="2"><path d="M14 9V5a3 3 0 0 0-3-3l-4 9v11h11.28a2 2 0 0 0 2-1.7l1.38-9a2 2 0 0 0-2-2.3z"/></svg></div><span class="delta" style="background:rgba(34,197,94,.12);color:#4ade80" id="kpi-pos-pct">30%</span></div><div class="val" style="color:#4ade80" id="kpi-pos">60</div><div class="lbl">Positive</div><div class="sub" id="kpi-pos-sub">30% satisfaction rate</div></div>
+    <div class="mc" style="--accent:#60a5fa"><div class="top"><div class="ico" style="background:rgba(96,165,250,.1)"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#93c5fd" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg></div><span class="delta" style="background:rgba(96,165,250,.1);color:#93c5fd" id="kpi-neu-pct">27%</span></div><div class="val" style="color:#93c5fd" id="kpi-neu">54</div><div class="lbl">Neutral</div><div class="sub">27% need context</div></div>
+    <div class="mc" style="--accent:#ef4444"><div class="top"><div class="ico" style="background:rgba(239,68,68,.12)"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#f87171" stroke-width="2"><path d="M10 15v4a3 3 0 0 0 3 3l4-9V2H5.72a2 2 0 0 0-2 1.7l-1.38 9a2 2 0 0 0 2 2.3z"/></svg></div><span class="delta" style="background:rgba(239,68,68,.12);color:#f87171" id="kpi-neg-pct">43%</span></div><div class="val" style="color:#f87171" id="kpi-neg">86</div><div class="lbl">Negative</div><div class="sub">Require follow-up</div></div>
+    <div class="mc" style="--accent:#ef4444"><div class="top"><div class="ico" style="background:rgba(239,68,68,.12)"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#f87171" stroke-width="2"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg></div><span class="delta" style="background:rgba(239,68,68,.15);color:#f87171" id="kpi-high-pct">31%</span></div><div class="val" style="color:#f87171" id="kpi-high">61</div><div class="lbl">High Urgency</div><div class="sub">Immediate action needed</div></div>
+    <div class="mc" style="--accent:#f59e0b"><div class="top"><div class="ico" style="background:rgba(245,158,11,.12)"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#fbbf24" stroke-width="2"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg></div><span class="delta" style="background:rgba(245,158,11,.12);color:#fbbf24">Score</span></div><div class="val" style="color:#fbbf24" id="kpi-health">46</div><div class="lbl">Health Score</div><div class="sub">Out of 100 &mdash; needs work</div></div>
+  </div>
+  <div class="slabel">Sentiment &amp; category breakdown</div>
+  <div class="g3x gap">
+    <div class="card"><h4>Sentiment per category</h4>
+      <div style="display:flex;gap:16px;margin-bottom:12px;font-size:11px;color:var(--text2)">
+        <span style="display:flex;align-items:center;gap:5px"><span style="width:10px;height:10px;border-radius:3px;background:#22c55e;display:inline-block"></span>Positive</span>
+        <span style="display:flex;align-items:center;gap:5px"><span style="width:10px;height:10px;border-radius:3px;background:#3b82f6;display:inline-block"></span>Neutral</span>
+        <span style="display:flex;align-items:center;gap:5px"><span style="width:10px;height:10px;border-radius:3px;background:#ef4444;display:inline-block"></span>Negative</span>
+      </div>
+      <div class="ch" style="height:230px"><canvas id="catSentChart"></canvas></div>
+    </div>
+    <div class="card"><h4>Overall sentiment</h4>
+      <div class="ch" style="height:155px"><canvas id="sentDonut"></canvas></div>
+      <div style="margin-top:14px;display:flex;flex-direction:column;gap:8px">
+        <div style="display:flex;justify-content:space-between;font-size:12px"><span style="display:flex;align-items:center;gap:6px"><span style="width:8px;height:8px;border-radius:50%;background:#22c55e;display:inline-block"></span>Positive</span><span style="font-weight:700;color:#4ade80"><span id="leg-pos">60 <span style="color:var(--text3);font-weight:400">(30%)</span></span></span></div>
+        <div style="display:flex;justify-content:space-between;font-size:12px"><span style="display:flex;align-items:center;gap:6px"><span style="width:8px;height:8px;border-radius:50%;background:#3b82f6;display:inline-block"></span>Neutral</span><span style="font-weight:700;color:#60a5fa"><span id="leg-neu">54 <span style="color:var(--text3);font-weight:400">(27%)</span></span></span></div>
+        <div style="display:flex;justify-content:space-between;font-size:12px"><span style="display:flex;align-items:center;gap:6px"><span style="width:8px;height:8px;border-radius:50%;background:#ef4444;display:inline-block"></span>Negative</span><span style="font-weight:700;color:#f87171"><span id="leg-neg">86 <span style="color:var(--text3);font-weight:400">(43%)</span></span></span></div>
+      </div>
+    </div>
+  </div>
+  <div class="slabel">Department health scores</div>
+  <div class="g5 gap" id="dept-scores-wrap"></div>
+  <div class="slabel">Department comparison</div>
+  <div class="card gap"><h4>Positive &middot; Neutral &middot; Negative per department</h4>
+    <div style="display:flex;gap:16px;margin-bottom:12px;font-size:11px;color:var(--text2)">
+      <span style="display:flex;align-items:center;gap:5px"><span style="width:10px;height:10px;border-radius:3px;background:#22c55e;display:inline-block"></span>Positive</span>
+      <span style="display:flex;align-items:center;gap:5px"><span style="width:10px;height:10px;border-radius:3px;background:#3b82f6;display:inline-block"></span>Neutral</span>
+      <span style="display:flex;align-items:center;gap:5px"><span style="width:10px;height:10px;border-radius:3px;background:#ef4444;display:inline-block"></span>Negative</span>
+    </div>
+    <div class="ch" style="height:240px"><canvas id="deptChart"></canvas></div>
+  </div>
+</div></div>
+
+<!-- FEEDBACK DATA -->
+<div class="page" id="page-feedback"><div class="wrap">
+  <div class="page-hero"><h1>Feedback Data</h1><p id="fb-hero-sub">All 200 records &middot; search by ID (F001), name, or keyword &middot; filter &amp; sort any column</p></div>
+  <div class="card">
+    <div class="fbar">
+      <input type="text" id="search" placeholder="Search by ID (F001), name, or keyword...">
+      <select id="f-sent"><option value="">All Sentiments</option><option>Positive</option><option>Neutral</option><option>Negative</option></select>
+      <select id="f-cat"><option value="">All Categories</option><option>Shipping</option><option>Product Quality</option><option>Billing</option><option>Customer Service</option><option>Returns/Refunds</option><option>Website/App Issue</option><option>General Feedback</option><option>Safety Concern</option><option>Other</option></select>
+      <select id="f-urg"><option value="">All Urgency</option><option>Low</option><option>Medium</option><option>High</option></select>
+      <select id="f-gender"><option value="">All Genders</option><option>Male</option><option>Female</option></select>
+      <select id="f-age"><option value="">All Ages</option><option>18-24</option><option>25-34</option><option>35-44</option><option>45-54</option><option>55-64</option><option>65+</option></select>
+      <span class="fcount" id="fcount">200 records</span>
+    </div>
+    <div class="twrap">
+      <table class="dt">
+        <thead><tr>
+          <th id="th-ID">ID &#8597;</th><th id="th-Name">Name &#8597;</th><th>Gender</th>
+          <th id="th-Age">Age &#8597;</th><th>Feedback</th><th>Category</th>
+          <th id="th-Sent">Sentiment &#8597;</th><th id="th-Urg">Urgency &#8597;</th>
+        </tr></thead>
+        <tbody id="feedback-tbody"></tbody>
+      </table>
+    </div>
+    <div class="pagination"><span id="pg-info">Page 1 of 8</span><div class="pgbtns" id="pg-btns"></div></div>
+  </div>
+</div></div>
+
+<!-- DEMOGRAPHICS -->
+<div class="page" id="page-demographics"><div class="wrap">
+  <div class="page-hero"><h1>Customer Demographics</h1><p>Age groups &middot; gender split &middot; behavioral patterns &middot; sentiment by cohort</p></div>
+  <div class="mg4">
+    <div class="mc" style="--accent:#3b82f6"><div class="top"><div class="ico" style="background:rgba(59,130,246,.12)"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#60a5fa" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg></div><span class="delta" style="background:rgba(59,130,246,.12);color:#60a5fa">200</span></div><div class="val" style="color:#60a5fa" id="kpi-d-total">200</div><div class="lbl">Total customers</div><div class="sub">All feedback submitters</div></div>
+    <div class="mc" style="--accent:#3b82f6"><div class="top"><div class="ico" style="background:rgba(59,130,246,.12)"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#60a5fa" stroke-width="2"><circle cx="12" cy="8" r="4"/><path d="M6 20v-2a6 6 0 0 1 12 0v2"/></svg></div><span class="delta" style="background:rgba(59,130,246,.12);color:#60a5fa" id="kpi-d-male-pct">53%</span></div><div class="val" style="color:#60a5fa" id="kpi-d-male">106</div><div class="lbl">Male</div><div class="sub">53% of respondents</div></div>
+    <div class="mc" style="--accent:#f472b6"><div class="top"><div class="ico" style="background:rgba(244,114,182,.12)"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#f9a8d4" stroke-width="2"><circle cx="12" cy="8" r="4"/><path d="M6 20v-2a6 6 0 0 1 12 0v2"/></svg></div><span class="delta" style="background:rgba(244,114,182,.12);color:#f9a8d4" id="kpi-d-female-pct">47%</span></div><div class="val" style="color:#f9a8d4" id="kpi-d-female">94</div><div class="lbl">Female</div><div class="sub">47% of respondents</div></div>
+    <div class="mc" style="--accent:#14b8a6"><div class="top"><div class="ico" style="background:rgba(20,184,166,.12)"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#2dd4bf" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg></div><span class="delta" style="background:rgba(20,184,166,.12);color:#2dd4bf">Peak</span></div><div class="val" style="color:#2dd4bf" id="kpi-d-peak">25-34</div><div class="lbl">Largest age group</div><div class="sub" id="kpi-d-peak-sub">64 customers (32%)</div></div>
+  </div>
+  <div class="slabel">Age &amp; gender breakdown</div>
+  <div class="g3 gap">
+    <div class="card"><h4>Age group distribution</h4>
+      <div class="arow"><div class="albl">18-24</div><div class="abg"><div class="afill" id="age-bar-0" style="width:36%"></div></div><div class="anum" id="age-num-0">23 &middot; 11.5%</div></div>
+      <div class="arow"><div class="albl">25-34</div><div class="abg"><div class="afill" id="age-bar-1" style="width:100%"></div></div><div class="anum" id="age-num-1">64 &middot; 32%</div></div>
+      <div class="arow"><div class="albl">35-44</div><div class="abg"><div class="afill" id="age-bar-2" style="width:81%"></div></div><div class="anum" id="age-num-2">52 &middot; 26%</div></div>
+      <div class="arow"><div class="albl">45-54</div><div class="abg"><div class="afill" id="age-bar-3" style="width:55%"></div></div><div class="anum" id="age-num-3">35 &middot; 17.5%</div></div>
+      <div class="arow"><div class="albl">55-64</div><div class="abg"><div class="afill" id="age-bar-4" style="width:27%"></div></div><div class="anum" id="age-num-4">17 &middot; 8.5%</div></div>
+      <div class="arow"><div class="albl">65+</div><div class="abg"><div class="afill" id="age-bar-5" style="width:14%"></div></div><div class="anum" id="age-num-5">9 &middot; 4.5%</div></div>
+    </div>
+    <div class="card"><h4>Gender split</h4>
+      <div class="ch" style="height:155px"><canvas id="genderDonut"></canvas></div>
+      <div style="margin-top:14px;display:flex;gap:10px">
+        <div style="flex:1;text-align:center;padding:12px;background:rgba(59,130,246,.08);border:1px solid rgba(59,130,246,.15);border-radius:10px"><div style="font-size:24px;font-weight:700;color:#60a5fa" id="gender-male-big">106</div><div style="font-size:10px;color:var(--text3);margin-top:2px" id="gender-male-pct">MALE &middot; 53%</div></div>
+        <div style="flex:1;text-align:center;padding:12px;background:rgba(244,114,182,.08);border:1px solid rgba(244,114,182,.15);border-radius:10px"><div style="font-size:24px;font-weight:700;color:#f9a8d4" id="gender-female-big">94</div><div style="font-size:10px;color:var(--text3);margin-top:2px" id="gender-female-pct">FEMALE &middot; 47%</div></div>
+      </div>
+    </div>
+    <div class="card"><h4>Sentiment by gender</h4>
+      <div style="display:flex;gap:12px;margin-bottom:10px;font-size:11px;color:var(--text2)">
+        <span style="display:flex;align-items:center;gap:4px"><span style="width:8px;height:8px;border-radius:2px;background:#22c55e;display:inline-block"></span>Positive</span>
+        <span style="display:flex;align-items:center;gap:4px"><span style="width:8px;height:8px;border-radius:2px;background:#3b82f6;display:inline-block"></span>Neutral</span>
+        <span style="display:flex;align-items:center;gap:4px"><span style="width:8px;height:8px;border-radius:2px;background:#ef4444;display:inline-block"></span>Negative</span>
+      </div>
+      <div class="ch" style="height:190px"><canvas id="genderSentChart"></canvas></div>
+    </div>
+  </div>
+  <div class="slabel">Behavioral analysis by age group</div>
+  <div class="g2 gap">
+    <div class="card"><h4>Sentiment by age group</h4>
+      <div style="display:flex;gap:12px;margin-bottom:10px;font-size:11px;color:var(--text2)">
+        <span style="display:flex;align-items:center;gap:4px"><span style="width:8px;height:8px;border-radius:2px;background:#22c55e;display:inline-block"></span>Positive</span>
+        <span style="display:flex;align-items:center;gap:4px"><span style="width:8px;height:8px;border-radius:2px;background:#3b82f6;display:inline-block"></span>Neutral</span>
+        <span style="display:flex;align-items:center;gap:4px"><span style="width:8px;height:8px;border-radius:2px;background:#ef4444;display:inline-block"></span>Negative</span>
+      </div>
+      <div class="ch" style="height:200px"><canvas id="ageSentChart"></canvas></div>
+    </div>
+    <div class="card"><h4>Category preference by gender</h4>
+      <div style="display:flex;gap:12px;margin-bottom:10px;font-size:11px;color:var(--text2)">
+        <span style="display:flex;align-items:center;gap:4px"><span style="width:8px;height:8px;border-radius:2px;background:#3b82f6;display:inline-block"></span>Male</span>
+        <span style="display:flex;align-items:center;gap:4px"><span style="width:8px;height:8px;border-radius:2px;background:#f472b6;display:inline-block"></span>Female</span>
+      </div>
+      <div class="ch" style="height:200px"><canvas id="genderCatChart"></canvas></div>
+    </div>
+  </div>
+</div></div>
+
+<!-- URGENCY -->
+<div class="page" id="page-urgency"><div class="wrap">
+  <div class="page-hero"><h1>Urgency Analysis</h1><p>Top 5 critical cases &middot; urgency heatmap by category &middot; distribution breakdown</p></div>
+  <div class="slabel">Top 5 most urgent cases</div>
+  <div class="g2 gap">
+    <div class="card card-glow">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1.1rem">
+        <h4 style="margin-bottom:0">High urgency open cases</h4>
+        <button id="view-all-urgent-btn" style="background:linear-gradient(135deg,#ef4444,#b91c1c);border:none;color:#fff;font-size:11px;font-weight:700;padding:6px 14px;border-radius:8px;cursor:pointer;letter-spacing:.03em;box-shadow:0 0 12px rgba(239,68,68,.3)">View All 61 Urgent Cases &#8594;</button>
+      </div>
+      <div id="top-urgent-list"></div>
+    </div>
+    <div class="card"><h4>Urgency level distribution</h4>
+      <div class="ch" style="height:155px"><canvas id="urgDonut"></canvas></div>
+      <div style="margin-top:14px;display:flex;flex-direction:column;gap:9px">
+        <div class="prog"><div class="proghd"><span style="color:#4ade80">Low urgency</span><span style="font-weight:600;color:#4ade80" id="urg-low-lbl">82 items (41%)</span></div><div class="progbg"><div class="progfill" id="urg-low-bar" style="width:41%;background:#22c55e"></div></div></div>
+        <div class="prog"><div class="proghd"><span style="color:#fbbf24">Medium urgency</span><span style="font-weight:600;color:#fbbf24" id="urg-med-lbl">57 items (28.5%)</span></div><div class="progbg"><div class="progfill" id="urg-med-bar" style="width:28.5%;background:#f59e0b"></div></div></div>
+        <div class="prog"><div class="proghd"><span style="color:#f87171">High urgency</span><span style="font-weight:600;color:#f87171" id="urg-high-lbl">61 items (30.5%)</span></div><div class="progbg"><div class="progfill" id="urg-high-bar" style="width:30.5%;background:#ef4444"></div></div></div>
+      </div>
+    </div>
+  </div>
+  <div class="slabel">Urgency heatmap &mdash; click any High cell to filter the data table</div>
+  <div class="card gap"><h4>Urgency intensity across all 9 categories</h4>
+    <div class="heatmap-wrap"><table class="hmap">
+      <thead><tr><th>Category</th><th>Low</th><th>Medium</th><th>High</th><th>Total</th></tr></thead>
+      <tbody id="heatmap-body"></tbody>
+    </table></div>
+  </div>
+  <div class="slabel">Urgency per category</div>
+  <div class="card gap"><h4>Low &middot; Medium &middot; High urgency items per category</h4>
+    <div style="display:flex;gap:16px;margin-bottom:12px;font-size:11px;color:var(--text2)">
+      <span style="display:flex;align-items:center;gap:5px"><span style="width:10px;height:10px;border-radius:3px;background:#22c55e;display:inline-block"></span>Low</span>
+      <span style="display:flex;align-items:center;gap:5px"><span style="width:10px;height:10px;border-radius:3px;background:#f59e0b;display:inline-block"></span>Medium</span>
+      <span style="display:flex;align-items:center;gap:5px"><span style="width:10px;height:10px;border-radius:3px;background:#ef4444;display:inline-block"></span>High</span>
+    </div>
+    <div class="ch" style="height:240px"><canvas id="urgCatChart"></canvas></div>
+  </div>
+</div></div>
+
+<!-- ANALYZE -->
+<div class="page" id="page-analyze"><div class="wrap">
+  <div class="page-hero"><h1>AI Feedback Analyzer</h1><p>Paste any customer feedback &middot; Claude classifies sentiment, category &amp; urgency in real time</p></div>
+  <div class="abox">
+    <h3>Paste customer feedback to classify</h3>
+    <textarea id="analyze-input" placeholder="Type or paste customer feedback here...&#10;&#10;Example: My order arrived damaged and two items were missing. I need this resolved immediately."></textarea>
+    <div class="btnrow">
+      <button class="btn btn-p" id="abtn">Analyze with Claude AI</button>
+      <button class="btn" id="clear-btn">Clear</button>
+    </div>
+  </div>
+  <div class="samp-row">
+    <span style="font-size:11px;color:var(--text3)">Try a sample:</span>
+    <button class="btn samp-btn" data-i="0">Damaged delivery</button>
+    <button class="btn samp-btn" data-i="1">Billing dispute</button>
+    <button class="btn samp-btn" data-i="2">Great support</button>
+    <button class="btn samp-btn" data-i="3">Safety concern</button>
+    <button class="btn samp-btn" data-i="4">App crash</button>
+    <button class="btn samp-btn" data-i="5">Missing refund</button>
+  </div>
+  <div id="ares"></div>
+  <div class="card" style="margin-top:1rem;display:none" id="hist-card">
+    <h4>Session history</h4>
+    <div class="twrap"><table class="dt">
+      <thead><tr><th>Feedback</th><th>Sentiment</th><th>Category</th><th>Urgency</th><th>Confidence</th></tr></thead>
+      <tbody id="hist-tbody"></tbody>
+    </table></div>
+  </div>
+</div></div>
+
+<!-- ABOUT -->
+<div class="page" id="page-about"><div class="wrap">
+  <div class="about-hero">
+    <h2>AI-Powered Customer Feedback Classifier &amp; Insights Dashboard</h2>
+    <div class="sub">EM 680 &mdash; Artificial Intelligence for Engineering Managers &middot; St. Cloud State University &middot; Minnesota</div>
+  </div>
+  <div class="slabel">Our team</div>
+  <div class="team-grid gap">
+    <div class="team-card"><div class="team-avatar" style="background:linear-gradient(135deg,#3b82f6,#1d4ed8)">SK</div><div class="team-name">Shwetha Bilaha Kaverappa</div></div>
+    <div class="team-card"><div class="team-avatar" style="background:linear-gradient(135deg,#7c3aed,#4f46e5)">AY</div><div class="team-name">Amente Yoseph D</div></div>
+    <div class="team-card"><div class="team-avatar" style="background:linear-gradient(135deg,#0891b2,#0e7490)">SR</div><div class="team-name">Sjoberg Ryan</div></div>
+    <div class="team-card"><div class="team-avatar" style="background:linear-gradient(135deg,#059669,#047857)">HB</div><div class="team-name">Haile Biniam</div></div>
+  </div>
+  <div class="slabel">Project details</div>
+  <div class="g2 gap">
+    <div class="proj-card"><h4>About this project</h4>
+      <p>AI-CFCID is an AI-powered customer feedback classification and insights platform built for EM 680 at St. Cloud State University. It solves a real problem in e-commerce and retail: the inability to automatically classify, prioritize, and surface insights from large volumes of unstructured customer feedback.</p>
+      <p>The system uses zero-shot classification via the Claude API (Anthropic) — no training data required. Each feedback item is labeled with sentiment, operational category, and urgency level, along with AI-generated reasoning and a recommended operational action.</p>
+      <div class="tech-tags"><span class="tech-tag">Claude API (claude-sonnet-4)</span><span class="tech-tag">HTML / JS / CSS</span><span class="tech-tag">Chart.js v4.4</span><span class="tech-tag">Zero-Shot LLM</span><span class="tech-tag">Prompt Engineering</span><span class="tech-tag">200-item Dataset</span></div>
+    </div>
+    <div class="proj-card"><h4>Course &amp; institution</h4>
+      <p><strong style="color:var(--text)">Course:</strong> EM 680 &mdash; Artificial Intelligence for Engineering Managers</p>
+      <p><strong style="color:var(--text)">Institution:</strong> St. Cloud State University, Minnesota</p>
+            <p><strong style="color:var(--text)">Project type:</strong> Final Group Project</p>
+      <p><strong style="color:var(--text)">Problem solved:</strong> E-commerce feedback triage is manual and slow. This platform automates classification and urgency detection using an LLM, reducing manual triage time by an estimated 60-80%.</p>
+      <div class="tech-tags"><span class="tech-tag">Group of 4</span><span class="tech-tag">Live Demo Ready</span><span class="tech-tag">Working AI System</span></div>
+    </div>
+  </div>
+</div></div>
+
+<!-- ALL URGENT MODAL -->
+<div id="urgent-modal" style="display:none;position:fixed;inset:0;z-index:1000;align-items:flex-start;justify-content:center;padding:1.5rem;overflow-y:auto">
+  <div id="urgent-overlay" style="position:fixed;inset:0;background:rgba(0,0,0,.75);backdrop-filter:blur(4px)"></div>
+  <div style="position:relative;background:#1c2030;border:1px solid #3a4468;border-radius:16px;width:100%;max-width:900px;margin:auto;box-shadow:0 24px 80px rgba(0,0,0,.6)">
+    <div style="display:flex;align-items:center;justify-content:space-between;padding:1.25rem 1.5rem;border-bottom:1px solid #2e3650;position:sticky;top:0;background:#1c2030;border-radius:16px 16px 0 0;z-index:10">
+      <div>
+        <div style="font-size:10px;color:#f87171;font-weight:700;text-transform:uppercase;letter-spacing:.08em;margin-bottom:2px">&#128680; Urgent Alert</div>
+        <div style="font-size:16px;font-weight:700;color:#e8eaf0">All High Urgency Feedback <span style="font-size:13px;color:#5a6380;font-weight:400">&mdash; <span id="urg-modal-count">61</span> items requiring immediate action</span></div>
+      </div>
+      <button id="urgent-modal-close" style="background:rgba(255,255,255,.06);border:1px solid #2e3650;color:#9ba3be;width:32px;height:32px;border-radius:8px;font-size:18px;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0">&times;</button>
+    </div>
+    <div style="padding:1rem 1.5rem;border-bottom:1px solid #2e3650;display:flex;gap:8px;flex-wrap:wrap;align-items:center">
+      <select id="urg-filter-cat" style="padding:6px 10px;border:1px solid #2e3650;border-radius:8px;font-size:12px;background:#222738;color:#e8eaf0;font-family:inherit;outline:none">
+        <option value="">All Categories</option>
+        <option>Shipping</option><option>Product Quality</option><option>Billing</option>
+        <option>Customer Service</option><option>Returns/Refunds</option>
+        <option>Website/App Issue</option><option>General Feedback</option>
+        <option>Safety Concern</option><option>Other</option>
+      </select>
+      <select id="urg-filter-gender" style="padding:6px 10px;border:1px solid #2e3650;border-radius:8px;font-size:12px;background:#222738;color:#e8eaf0;font-family:inherit;outline:none">
+        <option value="">All Genders</option><option>Male</option><option>Female</option>
+      </select>
+      <span id="urg-count" style="font-size:11px;color:#5a6380;margin-left:auto">61 items</span>
+    </div>
+    <div id="urgent-list-wrap" style="padding:1rem 1.5rem;max-height:65vh;overflow-y:auto"></div>
+  </div>
+</div>
+
+<!-- EDIT DATA -->
+<div class="page" id="page-edit"><div class="wrap">
+  <div class="page-hero">
+    <h1>Edit Feedback Data</h1>
+    <p>Add new records, edit existing feedback, or delete entries &mdash; changes apply instantly to all charts and tables</p>
+  </div>
+
+  <!-- ADD NEW RECORD -->
+  <div class="slabel">Add new feedback record</div>
+  <div class="card gap">
+    <h4>New record</h4>
+    <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-bottom:10px">
+      <div>
+        <label style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--text3);display:block;margin-bottom:5px">Customer Name</label>
+        <input id="e-name" type="text" placeholder="e.g. Sarah Johnson" style="width:100%;padding:8px 11px;border:1px solid var(--border);border-radius:var(--rsm);font-size:12px;background:var(--surf2);color:var(--text);font-family:inherit;outline:none">
+      </div>
+      <div>
+        <label style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--text3);display:block;margin-bottom:5px">Gender</label>
+        <select id="e-gender" style="width:100%;padding:8px 11px;border:1px solid var(--border);border-radius:var(--rsm);font-size:12px;background:var(--surf2);color:var(--text);font-family:inherit;outline:none">
+          <option value="">Select...</option><option>Male</option><option>Female</option>
+        </select>
+      </div>
+      <div>
+        <label style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--text3);display:block;margin-bottom:5px">Age</label>
+        <input id="e-age" type="number" min="18" max="90" placeholder="e.g. 34" style="width:100%;padding:8px 11px;border:1px solid var(--border);border-radius:var(--rsm);font-size:12px;background:var(--surf2);color:var(--text);font-family:inherit;outline:none">
+      </div>
+    </div>
+    <div style="margin-bottom:10px">
+      <label style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--text3);display:block;margin-bottom:5px">Customer Feedback</label>
+      <textarea id="e-feedback" placeholder="Enter full customer feedback text..." style="min-height:70px"></textarea>
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-bottom:14px">
+      <div>
+        <label style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--text3);display:block;margin-bottom:5px">Sentiment</label>
+        <select id="e-sent" style="width:100%;padding:8px 11px;border:1px solid var(--border);border-radius:var(--rsm);font-size:12px;background:var(--surf2);color:var(--text);font-family:inherit;outline:none">
+          <option value="">Select...</option><option>Positive</option><option>Neutral</option><option>Negative</option>
+        </select>
+      </div>
+      <div>
+        <label style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--text3);display:block;margin-bottom:5px">Category</label>
+        <select id="e-cat" style="width:100%;padding:8px 11px;border:1px solid var(--border);border-radius:var(--rsm);font-size:12px;background:var(--surf2);color:var(--text);font-family:inherit;outline:none">
+          <option value="">Select...</option>
+          <option>Shipping</option><option>Product Quality</option><option>Billing</option>
+          <option>Customer Service</option><option>Returns/Refunds</option>
+          <option>Website/App Issue</option><option>General Feedback</option>
+          <option>Safety Concern</option><option>Other</option>
+        </select>
+      </div>
+      <div>
+        <label style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--text3);display:block;margin-bottom:5px">Urgency</label>
+        <select id="e-urg" style="width:100%;padding:8px 11px;border:1px solid var(--border);border-radius:var(--rsm);font-size:12px;background:var(--surf2);color:var(--text);font-family:inherit;outline:none">
+          <option value="">Select...</option><option>Low</option><option>Medium</option><option>High</option>
+        </select>
+      </div>
+    </div>
+    <div style="display:flex;align-items:center;gap:10px">
+      <button id="add-record-btn" class="btn btn-p">+ Add Record</button>
+      <span id="edit-msg" style="font-size:12px;color:var(--green)"></span>
+    </div>
+  </div>
+
+  <!-- EDIT EXISTING -->
+  <div class="slabel">Edit or delete existing records</div>
+  <div class="card">
+    <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px;align-items:center">
+      <input type="text" id="edit-search" placeholder="Search by ID, name, or keyword..." style="min-width:230px;padding:7px 11px;border:1px solid var(--border);border-radius:var(--rsm);font-size:12px;background:var(--surf2);color:var(--text);font-family:inherit;outline:none">
+      <select id="edit-f-urg" style="padding:7px 11px;border:1px solid var(--border);border-radius:var(--rsm);font-size:12px;background:var(--surf2);color:var(--text);font-family:inherit;outline:none">
+        <option value="">All Urgency</option><option>Low</option><option>Medium</option><option>High</option>
+      </select>
+      <select id="edit-f-cat" style="padding:7px 11px;border:1px solid var(--border);border-radius:var(--rsm);font-size:12px;background:var(--surf2);color:var(--text);font-family:inherit;outline:none">
+        <option value="">All Categories</option>
+        <option>Shipping</option><option>Product Quality</option><option>Billing</option>
+        <option>Customer Service</option><option>Returns/Refunds</option>
+        <option>Website/App Issue</option><option>General Feedback</option>
+        <option>Safety Concern</option><option>Other</option>
+      </select>
+      <span id="edit-count" style="font-size:11px;color:var(--text3);margin-left:auto">200 records</span>
+    </div>
+    <div style="overflow-x:auto">
+      <table class="dt">
+        <thead><tr>
+          <th>ID</th><th>Name</th><th>Gender</th><th>Age</th>
+          <th>Feedback</th><th>Category</th><th>Sentiment</th><th>Urgency</th><th>Actions</th>
+        </tr></thead>
+        <tbody id="edit-tbody"></tbody>
+      </table>
+    </div>
+    <div class="pagination"><span id="edit-pg-info"></span><div class="pgbtns" id="edit-pg-btns"></div></div>
+  </div>
+</div></div>
+
+<!-- SETUP GUIDE -->
+<div class="page" id="page-setup"><div class="wrap">
+  <div class="page-hero">
+    <h1>Setup Guide &amp; Presentation Instructions</h1>
+    <p>Step-by-step guide to share this dashboard with your team and professor via Google Drive</p>
+  </div>
+
+  <div class="slabel">Before your presentation &mdash; 5 minute setup</div>
+  <div style="display:flex;flex-direction:column;gap:12px;margin-bottom:1.5rem">
+
+    <div style="background:var(--surf);border:1px solid var(--border);border-radius:var(--r);padding:1.4rem;display:flex;gap:16px">
+      <div style="width:36px;height:36px;border-radius:50%;background:linear-gradient(135deg,#3b82f6,#1d4ed8);color:#fff;font-size:16px;font-weight:800;display:flex;align-items:center;justify-content:center;flex-shrink:0">1</div>
+      <div>
+        <div style="font-size:14px;font-weight:700;color:var(--text);margin-bottom:6px">Get your Anthropic API key</div>
+        <div style="font-size:12px;color:var(--text2);line-height:1.8">Go to <span style="background:var(--surf2);padding:2px 8px;border-radius:5px;font-family:monospace;color:var(--blue2)">console.anthropic.com</span> &rarr; Sign in &rarr; Click <strong style="color:var(--text)">API Keys</strong> in the left sidebar &rarr; Click <strong style="color:var(--text)">Create Key</strong> &rarr; Copy the key (starts with <span style="font-family:monospace;color:var(--blue2)">sk-ant-</span>).<br>Keep this key private &mdash; delete it from the console immediately after your presentation.</div>
+      </div>
+    </div>
+
+    <div style="background:var(--surf);border:1px solid var(--border);border-radius:var(--r);padding:1.4rem;display:flex;gap:16px">
+      <div style="width:36px;height:36px;border-radius:50%;background:linear-gradient(135deg,#3b82f6,#1d4ed8);color:#fff;font-size:16px;font-weight:800;display:flex;align-items:center;justify-content:center;flex-shrink:0">2</div>
+      <div>
+        <div style="font-size:14px;font-weight:700;color:var(--text);margin-bottom:6px">Add your API key to this file</div>
+        <div style="font-size:12px;color:var(--text2);line-height:1.8">Download this HTML file &rarr; Open it in <strong style="color:var(--text)">Notepad</strong> (Windows) or <strong style="color:var(--text)">TextEdit</strong> (Mac) &rarr; Press <span style="background:var(--surf2);padding:2px 8px;border-radius:5px;font-family:monospace;color:var(--text)">Ctrl+H</span> (Find &amp; Replace) &rarr; Find: <span style="background:var(--surf2);padding:2px 8px;border-radius:5px;font-family:monospace;color:#fbbf24">YOUR_API_KEY_HERE</span> &rarr; Replace with your actual key &rarr; Save the file.</div>
+      </div>
+    </div>
+
+    <div style="background:var(--surf);border:1px solid var(--border);border-radius:var(--r);padding:1.4rem;display:flex;gap:16px">
+      <div style="width:36px;height:36px;border-radius:50%;background:linear-gradient(135deg,#3b82f6,#1d4ed8);color:#fff;font-size:16px;font-weight:800;display:flex;align-items:center;justify-content:center;flex-shrink:0">3</div>
+      <div>
+        <div style="font-size:14px;font-weight:700;color:var(--text);margin-bottom:6px">Upload to Google Drive</div>
+        <div style="font-size:12px;color:var(--text2);line-height:1.8">Go to <span style="background:var(--surf2);padding:2px 8px;border-radius:5px;font-family:monospace;color:var(--blue2)">drive.google.com</span> &rarr; Click <strong style="color:var(--text)">+ New &rarr; File upload</strong> &rarr; Select the saved HTML file &rarr; Wait for upload to complete.</div>
+      </div>
+    </div>
+
+    <div style="background:var(--surf);border:1px solid var(--border);border-radius:var(--r);padding:1.4rem;display:flex;gap:16px">
+      <div style="width:36px;height:36px;border-radius:50%;background:linear-gradient(135deg,#3b82f6,#1d4ed8);color:#fff;font-size:16px;font-weight:800;display:flex;align-items:center;justify-content:center;flex-shrink:0">4</div>
+      <div>
+        <div style="font-size:14px;font-weight:700;color:var(--text);margin-bottom:6px">Share with your team &amp; professor</div>
+        <div style="font-size:12px;color:var(--text2);line-height:1.8">Right-click the file in Drive &rarr; <strong style="color:var(--text)">Share</strong> &rarr; Click <strong style="color:var(--text)">"Change to anyone with the link"</strong> &rarr; Set to <strong style="color:var(--text)">Viewer</strong> &rarr; Copy link &rarr; Send to your team and professor.<br>They open the link &rarr; Google Drive shows a preview &rarr; they click <strong style="color:var(--text)">Open</strong> or <strong style="color:var(--text)">Download</strong> &rarr; open the file in their browser.</div>
+      </div>
+    </div>
+
+    <div style="background:rgba(239,68,68,.05);border:1px solid rgba(239,68,68,.2);border-radius:var(--r);padding:1.4rem;display:flex;gap:16px">
+      <div style="width:36px;height:36px;border-radius:50%;background:rgba(239,68,68,.15);color:#f87171;font-size:16px;font-weight:800;display:flex;align-items:center;justify-content:center;flex-shrink:0">5</div>
+      <div>
+        <div style="font-size:14px;font-weight:700;color:#f87171;margin-bottom:6px">After your presentation &mdash; revoke the API key</div>
+        <div style="font-size:12px;color:var(--text2);line-height:1.8">Go back to <span style="background:var(--surf2);padding:2px 8px;border-radius:5px;font-family:monospace;color:var(--blue2)">console.anthropic.com</span> &rarr; <strong style="color:var(--text)">API Keys</strong> &rarr; click the <strong style="color:#f87171">Delete</strong> button next to your key. This instantly stops anyone from using it even if they saved the file. It takes 10 seconds and protects your account completely.</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="slabel">Important notes for your professor demo</div>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:1.5rem">
+    <div style="background:var(--surf);border:1px solid var(--border);border-radius:var(--r);padding:1.25rem">
+      <div style="font-size:12px;font-weight:700;color:var(--text);margin-bottom:10px">What works without API key</div>
+      <div style="display:flex;flex-direction:column;gap:6px;font-size:12px;color:var(--text2)">
+        <div style="display:flex;align-items:center;gap:8px"><span style="color:#4ade80;font-weight:700">&#10003;</span> Overview dashboard &amp; all charts</div>
+        <div style="display:flex;align-items:center;gap:8px"><span style="color:#4ade80;font-weight:700">&#10003;</span> Feedback Data table &amp; search</div>
+        <div style="display:flex;align-items:center;gap:8px"><span style="color:#4ade80;font-weight:700">&#10003;</span> Demographics page</div>
+        <div style="display:flex;align-items:center;gap:8px"><span style="color:#4ade80;font-weight:700">&#10003;</span> Urgency heatmap &amp; all urgent cases</div>
+        <div style="display:flex;align-items:center;gap:8px"><span style="color:#4ade80;font-weight:700">&#10003;</span> Edit Data &mdash; add, edit, delete records</div>
+        <div style="display:flex;align-items:center;gap:8px"><span style="color:#4ade80;font-weight:700">&#10003;</span> About page &amp; team info</div>
+      </div>
+    </div>
+    <div style="background:var(--surf);border:1px solid var(--border);border-radius:var(--r);padding:1.25rem">
+      <div style="font-size:12px;font-weight:700;color:var(--text);margin-bottom:10px">What needs the API key</div>
+      <div style="display:flex;flex-direction:column;gap:6px;font-size:12px;color:var(--text2)">
+        <div style="display:flex;align-items:center;gap:8px"><span style="color:#fbbf24;font-weight:700">&#9888;</span> Analyze tab &mdash; live Claude classification</div>
+        <div style="display:flex;align-items:center;gap:8px"><span style="color:#fbbf24;font-weight:700">&#9888;</span> Without key: shows "add API key" message</div>
+        <div style="display:flex;align-items:center;gap:8px"><span style="color:#4ade80;font-weight:700">&#10003;</span> All other 5 pages work 100% offline</div>
+        <div style="margin-top:8px;padding:8px;background:var(--surf2);border-radius:8px;font-size:11px;color:var(--text3)">Tip: For the professor demo, add the key morning-of using Find &amp; Replace in Notepad. Takes 60 seconds.</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="slabel">Quick reference &mdash; Find &amp; Replace instructions</div>
+  <div style="background:var(--surf);border:1px solid var(--border);border-radius:var(--r);padding:1.4rem">
+    <div style="font-size:12px;color:var(--text2);line-height:2">
+      <strong style="color:var(--text)">Windows (Notepad):</strong> Open file in Notepad &rarr; Ctrl+H &rarr; Find: <span style="font-family:monospace;background:var(--surf2);padding:2px 8px;border-radius:4px;color:#fbbf24">YOUR_API_KEY_HERE</span> &rarr; Replace with: <span style="font-family:monospace;background:var(--surf2);padding:2px 8px;border-radius:4px;color:#4ade80">sk-ant-xxxx...</span> &rarr; Replace All &rarr; Save (Ctrl+S)<br>
+      <strong style="color:var(--text)">Mac (TextEdit):</strong> Open file &rarr; Edit menu &rarr; Find &rarr; Find and Replace &rarr; Same as above &rarr; Save (Cmd+S)<br>
+      <strong style="color:var(--text)">VS Code (any OS):</strong> Open file &rarr; Ctrl+H (or Cmd+H) &rarr; Find &amp; Replace &rarr; Replace All &rarr; Save
+    </div>
+  </div>
+
+</div></div>
+
+<!-- EDIT MODAL — inline row editing -->
+<div id="edit-row-modal" style="display:none;position:fixed;inset:0;z-index:1000;align-items:center;justify-content:center;padding:1.5rem">
+  <div id="edit-row-overlay" style="position:absolute;inset:0;background:rgba(0,0,0,.75);backdrop-filter:blur(4px)"></div>
+  <div style="position:relative;background:#1c2030;border:1px solid #3a4468;border-radius:16px;width:100%;max-width:580px;box-shadow:0 24px 80px rgba(0,0,0,.6)">
+    <div style="display:flex;align-items:center;justify-content:space-between;padding:1.25rem 1.5rem;border-bottom:1px solid #2e3650">
+      <div style="font-size:15px;font-weight:700;color:#e8eaf0">Edit Record <span id="edit-row-id" style="font-size:12px;color:#5a6380;font-family:monospace"></span></div>
+      <button id="edit-row-close" style="background:rgba(255,255,255,.06);border:1px solid #2e3650;color:#9ba3be;width:32px;height:32px;border-radius:8px;font-size:18px;cursor:pointer;display:flex;align-items:center;justify-content:center">&times;</button>
+    </div>
+    <div style="padding:1.5rem;display:flex;flex-direction:column;gap:12px">
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px">
+        <div><label style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:#5a6380;display:block;margin-bottom:5px">Name</label><input id="er-name" type="text" style="width:100%;padding:8px 11px;border:1px solid #2e3650;border-radius:8px;font-size:12px;background:#222738;color:#e8eaf0;font-family:inherit;outline:none"></div>
+        <div><label style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:#5a6380;display:block;margin-bottom:5px">Gender</label><select id="er-gender" style="width:100%;padding:8px 11px;border:1px solid #2e3650;border-radius:8px;font-size:12px;background:#222738;color:#e8eaf0;font-family:inherit;outline:none"><option>Male</option><option>Female</option></select></div>
+        <div><label style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:#5a6380;display:block;margin-bottom:5px">Age</label><input id="er-age" type="number" style="width:100%;padding:8px 11px;border:1px solid #2e3650;border-radius:8px;font-size:12px;background:#222738;color:#e8eaf0;font-family:inherit;outline:none"></div>
+      </div>
+      <div><label style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:#5a6380;display:block;margin-bottom:5px">Feedback</label><textarea id="er-feedback" style="min-height:80px;background:#222738;border-color:#2e3650"></textarea></div>
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px">
+        <div><label style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:#5a6380;display:block;margin-bottom:5px">Sentiment</label><select id="er-sent" style="width:100%;padding:8px 11px;border:1px solid #2e3650;border-radius:8px;font-size:12px;background:#222738;color:#e8eaf0;font-family:inherit;outline:none"><option>Positive</option><option>Neutral</option><option>Negative</option></select></div>
+        <div><label style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:#5a6380;display:block;margin-bottom:5px">Category</label><select id="er-cat" style="width:100%;padding:8px 11px;border:1px solid #2e3650;border-radius:8px;font-size:12px;background:#222738;color:#e8eaf0;font-family:inherit;outline:none"><option>Shipping</option><option>Product Quality</option><option>Billing</option><option>Customer Service</option><option>Returns/Refunds</option><option>Website/App Issue</option><option>General Feedback</option><option>Safety Concern</option><option>Other</option></select></div>
+        <div><label style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:#5a6380;display:block;margin-bottom:5px">Urgency</label><select id="er-urg" style="width:100%;padding:8px 11px;border:1px solid #2e3650;border-radius:8px;font-size:12px;background:#222738;color:#e8eaf0;font-family:inherit;outline:none"><option>Low</option><option>Medium</option><option>High</option></select></div>
+      </div>
+      <div style="display:flex;gap:10px;justify-content:flex-end;padding-top:4px">
+        <button id="er-save" class="btn btn-p">Save Changes</button>
+        <button id="er-cancel" class="btn">Cancel</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- FEEDBACK MODAL -->
+<div id="fb-modal" style="display:none;position:fixed;inset:0;z-index:1000;align-items:center;justify-content:center;padding:1.5rem">
+  <div id="fb-overlay" style="position:absolute;inset:0;background:rgba(0,0,0,.7);backdrop-filter:blur(4px)"></div>
+  <div style="position:relative;background:#1c2030;border:1px solid #3a4468;border-radius:16px;width:100%;max-width:600px;max-height:90vh;overflow-y:auto;box-shadow:0 24px 80px rgba(0,0,0,.6)">
+    <div style="display:flex;align-items:center;justify-content:space-between;padding:1.25rem 1.5rem;border-bottom:1px solid #2e3650">
+      <div>
+        <div id="modal-id" style="font-size:10px;color:#5a6380;font-family:monospace;margin-bottom:2px"></div>
+        <div id="modal-name" style="font-size:16px;font-weight:700;color:#e8eaf0"></div>
+      </div>
+      <button id="modal-close" style="background:rgba(255,255,255,.06);border:1px solid #2e3650;color:#9ba3be;width:32px;height:32px;border-radius:8px;font-size:18px;cursor:pointer;display:flex;align-items:center;justify-content:center;line-height:1">&times;</button>
+    </div>
+    <div style="padding:1.5rem;display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:4px">
+      <div style="background:#222738;border:1px solid #2e3650;border-radius:10px;padding:12px">
+        <div style="font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:#5a6380;margin-bottom:6px">Gender</div>
+        <div id="modal-gender" style="font-size:14px;font-weight:600;color:#e8eaf0"></div>
+      </div>
+      <div style="background:#222738;border:1px solid #2e3650;border-radius:10px;padding:12px">
+        <div style="font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:#5a6380;margin-bottom:6px">Age</div>
+        <div id="modal-age" style="font-size:14px;font-weight:600;color:#e8eaf0"></div>
+      </div>
+      <div style="background:#222738;border:1px solid #2e3650;border-radius:10px;padding:12px">
+        <div style="font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:#5a6380;margin-bottom:6px">Sentiment</div>
+        <div id="modal-sentiment" style="font-size:14px;font-weight:600"></div>
+      </div>
+      <div style="background:#222738;border:1px solid #2e3650;border-radius:10px;padding:12px">
+        <div style="font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:#5a6380;margin-bottom:6px">Urgency</div>
+        <div id="modal-urgency" style="font-size:14px;font-weight:600"></div>
+      </div>
+    </div>
+    <div style="padding:0 1.5rem 12px">
+      <div style="background:#222738;border:1px solid #2e3650;border-radius:10px;padding:12px">
+        <div style="font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:#5a6380;margin-bottom:6px">Category</div>
+        <div id="modal-category" style="font-size:14px;font-weight:600;color:#c4b5fd"></div>
+      </div>
+    </div>
+    <div style="padding:0 1.5rem 1.5rem">
+      <div style="background:#0f1117;border:1px solid #2e3650;border-radius:10px;padding:16px">
+        <div style="font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:#5a6380;margin-bottom:10px">Full Feedback</div>
+        <div id="modal-feedback" style="font-size:14px;color:#e8eaf0;line-height:1.8"></div>
+      </div>
+    </div>
+    <div style="padding:0 1.5rem 1.5rem">
+      <div style="background:#161920;border:1px solid #2e3650;border-left:3px solid #3b82f6;border-radius:10px;padding:14px">
+        <div style="font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:#5a6380;margin-bottom:8px">Reason for Label</div>
+        <div id="modal-reason" style="font-size:12px;color:#9ba3be;line-height:1.7"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="footer">
+  <span class="footer-brand">AI-CFCID</span>
+  <span>AI-Powered Customer Feedback Classifier &amp; Insights Dashboard &middot; EM 680 &middot; St. Cloud State University</span>
+  <span>Powered by Claude API (Anthropic) &middot; 200 records</span>
+</div>
+
+<script>
+const CATS=["Shipping", "Product Quality", "Billing", "Customer Service", "Returns/Refunds", "Website/App Issue", "General Feedback", "Safety Concern", "Other"];
+const AGE_GROUPS=["18-24", "25-34", "35-44", "45-54", "55-64", "65+"];
+const CAT_SENT={"Shipping": {"pos": 7, "neu": 6, "neg": 10, "total": 23, "high": 7, "med": 9, "low": 7}, "Product Quality": {"pos": 7, "neu": 5, "neg": 11, "total": 23, "high": 8, "med": 5, "low": 10}, "Billing": {"pos": 5, "neu": 6, "neg": 11, "total": 22, "high": 8, "med": 7, "low": 7}, "Customer Service": {"pos": 8, "neu": 5, "neg": 9, "total": 22, "high": 6, "med": 9, "low": 7}, "Returns/Refunds": {"pos": 6, "neu": 6, "neg": 10, "total": 22, "high": 7, "med": 6, "low": 9}, "Website/App Issue": {"pos": 7, "neu": 7, "neg": 8, "total": 22, "high": 6, "med": 7, "low": 9}, "General Feedback": {"pos": 12, "neu": 7, "neg": 3, "total": 22, "high": 0, "med": 4, "low": 18}, "Safety Concern": {"pos": 0, "neu": 4, "neg": 18, "total": 22, "high": 17, "med": 5, "low": 0}, "Other": {"pos": 8, "neu": 8, "neg": 6, "total": 22, "high": 2, "med": 5, "low": 15}};
+const HEATMAP={"Shipping": {"Low": 7, "Medium": 9, "High": 7}, "Product Quality": {"Low": 10, "Medium": 5, "High": 8}, "Billing": {"Low": 7, "Medium": 7, "High": 8}, "Customer Service": {"Low": 7, "Medium": 9, "High": 6}, "Returns/Refunds": {"Low": 9, "Medium": 6, "High": 7}, "Website/App Issue": {"Low": 9, "Medium": 7, "High": 6}, "General Feedback": {"Low": 18, "Medium": 4, "High": 0}, "Safety Concern": {"Low": 0, "Medium": 5, "High": 17}, "Other": {"Low": 15, "Medium": 5, "High": 2}};
+const AGE_SENT={"18-24": {"pos": 7, "neu": 7, "neg": 9, "total": 23}, "25-34": {"pos": 19, "neu": 14, "neg": 31, "total": 64}, "35-44": {"pos": 18, "neu": 16, "neg": 18, "total": 52}, "45-54": {"pos": 8, "neu": 11, "neg": 16, "total": 35}, "55-64": {"pos": 6, "neu": 3, "neg": 8, "total": 17}, "65+": {"pos": 2, "neu": 3, "neg": 4, "total": 9}};
+const TOP_URGENT=[{"ID": "F014", "Name": "Joseph Harris", "Gender": "Male", "Age": 30, "Age Group": "25-34", "Customer Feedback": "My package says delivered, but I never received it. This is the second time this has happened.", "Expected Sentiment": "Negative", "Expected Category": "Shipping", "Expected Urgency": "High", "Reason for Label": "Missing delivery and repeated complaint make it urgent."}, {"ID": "F015", "Name": "Timothy Thompson", "Gender": "Male", "Age": 29, "Age Group": "25-34", "Customer Feedback": "The box arrived crushed and one item inside was damaged.", "Expected Sentiment": "Negative", "Expected Category": "Shipping", "Expected Urgency": "High", "Reason for Label": "Shipping damage affected product condition."}, {"ID": "F016", "Name": "Brandon Green", "Gender": "Male", "Age": 28, "Age Group": "25-34", "Customer Feedback": "I paid for expedited shipping, but it arrived late with no explanation.", "Expected Sentiment": "Negative", "Expected Category": "Shipping", "Expected Urgency": "High", "Reason for Label": "Paid service failure and likely refund expectation."}, {"ID": "F017", "Name": "Jacob Harris", "Gender": "Male", "Age": 33, "Age Group": "25-34", "Customer Feedback": "The carrier delivered my order to the wrong address and I need this fixed today.", "Expected Sentiment": "Negative", "Expected Category": "Shipping", "Expected Urgency": "High", "Reason for Label": "Wrong address delivery requires immediate resolution."}, {"ID": "F018", "Name": "Frank Lee", "Gender": "Male", "Age": 45, "Age Group": "45-54", "Customer Feedback": "My frozen items arrived warm because the shipment was delayed overnight.", "Expected Sentiment": "Negative", "Expected Category": "Shipping", "Expected Urgency": "High", "Reason for Label": "Damaged/perishable shipment creates urgent quality risk."}];
+const DATA=[{"ID": "F001", "Name": "Michael Mitchell", "Gender": "Male", "Age": 28, "Age Group": "25-34", "Customer Feedback": "My order arrived two days early and the tracking updates were easy to follow.", "Expected Sentiment": "Positive", "Expected Category": "Shipping", "Expected Urgency": "Low", "Reason for Label": "Positive delivery experience; no action required beyond normal tracking."}, {"ID": "F002", "Name": "Dennis Miller", "Gender": "Male", "Age": 43, "Age Group": "35-44", "Customer Feedback": "The package came on time and the box was in perfect condition.", "Expected Sentiment": "Positive", "Expected Category": "Shipping", "Expected Urgency": "Low", "Reason for Label": "Compliment about delivery condition and timing."}, {"ID": "F003", "Name": "Scott Ramirez", "Gender": "Male", "Age": 18, "Age Group": "18-24", "Customer Feedback": "Fast shipping and clear delivery notifications made this a smooth purchase.", "Expected Sentiment": "Positive", "Expected Category": "Shipping", "Expected Urgency": "Low", "Reason for Label": "Positive shipping feedback with no issue."}, {"ID": "F004", "Name": "Donald Allen", "Gender": "Male", "Age": 43, "Age Group": "35-44", "Customer Feedback": "The driver left the package in the covered area like I requested. Thank you.", "Expected Sentiment": "Positive", "Expected Category": "Shipping", "Expected Urgency": "Low", "Reason for Label": "Positive comment about delivery instructions being followed."}, {"ID": "F005", "Name": "Patrick Adams", "Gender": "Male", "Age": 51, "Age Group": "45-54", "Customer Feedback": "The replacement item was shipped quickly after my first package went missing.", "Expected Sentiment": "Positive", "Expected Category": "Shipping", "Expected Urgency": "Medium", "Reason for Label": "Positive resolution but involves a prior missing package, so moderate attention."}, {"ID": "F006", "Name": "Ryan Nguyen", "Gender": "Male", "Age": 25, "Age Group": "25-34", "Customer Feedback": "I like that I could see each shipping step in the app.", "Expected Sentiment": "Positive", "Expected Category": "Shipping", "Expected Urgency": "Low", "Reason for Label": "Feedback praises shipping visibility."}, {"ID": "F007", "Name": "Alexander Ramirez", "Gender": "Male", "Age": 27, "Age Group": "25-34", "Customer Feedback": "The delivery was delayed, but customer service kept me updated the whole time.", "Expected Sentiment": "Positive", "Expected Category": "Shipping", "Expected Urgency": "Medium", "Reason for Label": "Mixed shipping issue with good communication; moderate urgency due delay."}, {"ID": "F008", "Name": "Jerry Perez", "Gender": "Male", "Age": 21, "Age Group": "18-24", "Customer Feedback": "When will my order ship? It has been processing since Monday.", "Expected Sentiment": "Neutral", "Expected Category": "Shipping", "Expected Urgency": "Medium", "Reason for Label": "Customer asks for status after processing delay."}, {"ID": "F009", "Name": "George Singh", "Gender": "Male", "Age": 29, "Age Group": "25-34", "Customer Feedback": "The tracking link still says label created, but there has been no movement.", "Expected Sentiment": "Neutral", "Expected Category": "Shipping", "Expected Urgency": "Medium", "Reason for Label": "Shipping status issue without strong emotion."}, {"ID": "F010", "Name": "Jack Robinson", "Gender": "Male", "Age": 41, "Age Group": "35-44", "Customer Feedback": "Can you confirm whether my order will arrive before Friday?", "Expected Sentiment": "Neutral", "Expected Category": "Shipping", "Expected Urgency": "Medium", "Reason for Label": "Delivery timing question that may affect customer planning."}, {"ID": "F011", "Name": "Larry Jackson", "Gender": "Male", "Age": 54, "Age Group": "45-54", "Customer Feedback": "The package was delivered to my front office instead of my apartment door.", "Expected Sentiment": "Neutral", "Expected Category": "Shipping", "Expected Urgency": "Low", "Reason for Label": "Minor delivery location issue; no loss or damage reported."}, {"ID": "F012", "Name": "Pamela Gonzalez", "Gender": "Female", "Age": 45, "Age Group": "45-54", "Customer Feedback": "The shipping estimate changed from three days to five days after checkout.", "Expected Sentiment": "Neutral", "Expected Category": "Shipping", "Expected Urgency": "Medium", "Reason for Label": "Delivery expectation changed and needs review."}, {"ID": "F013", "Name": "Tyler Jackson", "Gender": "Male", "Age": 78, "Age Group": "65+", "Customer Feedback": "The order arrived separately in three boxes. Is that normal?", "Expected Sentiment": "Neutral", "Expected Category": "Shipping", "Expected Urgency": "Low", "Reason for Label": "General shipping question; no complaint or urgency."}, {"ID": "F014", "Name": "Joseph Harris", "Gender": "Male", "Age": 30, "Age Group": "25-34", "Customer Feedback": "My package says delivered, but I never received it. This is the second time this has happened.", "Expected Sentiment": "Negative", "Expected Category": "Shipping", "Expected Urgency": "High", "Reason for Label": "Missing delivery and repeated complaint make it urgent."}, {"ID": "F015", "Name": "Timothy Thompson", "Gender": "Male", "Age": 29, "Age Group": "25-34", "Customer Feedback": "The box arrived crushed and one item inside was damaged.", "Expected Sentiment": "Negative", "Expected Category": "Shipping", "Expected Urgency": "High", "Reason for Label": "Shipping damage affected product condition."}, {"ID": "F016", "Name": "Brandon Green", "Gender": "Male", "Age": 28, "Age Group": "25-34", "Customer Feedback": "I paid for expedited shipping, but it arrived late with no explanation.", "Expected Sentiment": "Negative", "Expected Category": "Shipping", "Expected Urgency": "High", "Reason for Label": "Paid service failure and likely refund expectation."}, {"ID": "F017", "Name": "Jacob Harris", "Gender": "Male", "Age": 33, "Age Group": "25-34", "Customer Feedback": "The carrier delivered my order to the wrong address and I need this fixed today.", "Expected Sentiment": "Negative", "Expected Category": "Shipping", "Expected Urgency": "High", "Reason for Label": "Wrong address delivery requires immediate resolution."}, {"ID": "F018", "Name": "Frank Lee", "Gender": "Male", "Age": 45, "Age Group": "45-54", "Customer Feedback": "My frozen items arrived warm because the shipment was delayed overnight.", "Expected Sentiment": "Negative", "Expected Category": "Shipping", "Expected Urgency": "High", "Reason for Label": "Damaged/perishable shipment creates urgent quality risk."}, {"ID": "F019", "Name": "Robert Kim", "Gender": "Male", "Age": 29, "Age Group": "25-34", "Customer Feedback": "The package was left in the rain even though the delivery note said covered porch.", "Expected Sentiment": "Negative", "Expected Category": "Shipping", "Expected Urgency": "Medium", "Reason for Label": "Delivery instruction failure caused possible damage."}, {"ID": "F020", "Name": "Mark Okafor", "Gender": "Male", "Age": 60, "Age Group": "55-64", "Customer Feedback": "Tracking shows my package bouncing between facilities for a week.", "Expected Sentiment": "Negative", "Expected Category": "Shipping", "Expected Urgency": "Medium", "Reason for Label": "Extended transit delay but no escalation language."}, {"ID": "F021", "Name": "Raymond Young", "Gender": "Male", "Age": 32, "Age Group": "25-34", "Customer Feedback": "The box was open when it arrived and I am missing two items.", "Expected Sentiment": "Negative", "Expected Category": "Shipping", "Expected Urgency": "High", "Reason for Label": "Open package and missing items require escalation."}, {"ID": "F022", "Name": "Paul Rodriguez", "Gender": "Male", "Age": 33, "Age Group": "25-34", "Customer Feedback": "I ordered this for a birthday gift and it arrived three days late.", "Expected Sentiment": "Negative", "Expected Category": "Shipping", "Expected Urgency": "Medium", "Reason for Label": "Late delivery caused customer dissatisfaction."}, {"ID": "F023", "Name": "Catherine Nguyen", "Gender": "Female", "Age": 34, "Age Group": "25-34", "Customer Feedback": "The shipping label had the right address, but the package still went to another city.", "Expected Sentiment": "Negative", "Expected Category": "Shipping", "Expected Urgency": "High", "Reason for Label": "Carrier/address routing issue caused non-delivery."}, {"ID": "F024", "Name": "Melissa Anderson", "Gender": "Female", "Age": 67, "Age Group": "65+", "Customer Feedback": "The jacket feels well made and the stitching is better than I expected.", "Expected Sentiment": "Positive", "Expected Category": "Product Quality", "Expected Urgency": "Low", "Reason for Label": "Positive product quality feedback."}, {"ID": "F025", "Name": "Elizabeth Carter", "Gender": "Female", "Age": 18, "Age Group": "18-24", "Customer Feedback": "The headphones sound great and the case feels durable.", "Expected Sentiment": "Positive", "Expected Category": "Product Quality", "Expected Urgency": "Low", "Reason for Label": "Customer praises product performance and build."}, {"ID": "F026", "Name": "Samuel Hernandez", "Gender": "Male", "Age": 51, "Age Group": "45-54", "Customer Feedback": "The blender works smoothly and feels stronger than my old one.", "Expected Sentiment": "Positive", "Expected Category": "Product Quality", "Expected Urgency": "Low", "Reason for Label": "Positive comment about product function."}, {"ID": "F027", "Name": "Ronald Harris", "Gender": "Male", "Age": 42, "Age Group": "35-44", "Customer Feedback": "The color and material match the product photos exactly.", "Expected Sentiment": "Positive", "Expected Category": "Product Quality", "Expected Urgency": "Low", "Reason for Label": "Product quality met expectations."}, {"ID": "F028", "Name": "Brenda Kumar", "Gender": "Female", "Age": 56, "Age Group": "55-64", "Customer Feedback": "The shoes fit well and the cushioning is very comfortable.", "Expected Sentiment": "Positive", "Expected Category": "Product Quality", "Expected Urgency": "Low", "Reason for Label": "Positive product comfort feedback."}, {"ID": "F029", "Name": "Heather Adams", "Gender": "Female", "Age": 29, "Age Group": "25-34", "Customer Feedback": "The replacement item you sent is perfect and works as expected.", "Expected Sentiment": "Positive", "Expected Category": "Product Quality", "Expected Urgency": "Low", "Reason for Label": "Product issue resolved successfully."}, {"ID": "F030", "Name": "Lisa Robinson", "Gender": "Female", "Age": 23, "Age Group": "18-24", "Customer Feedback": "I was worried about the quality, but the item feels premium.", "Expected Sentiment": "Positive", "Expected Category": "Product Quality", "Expected Urgency": "Low", "Reason for Label": "Positive quality perception."}, {"ID": "F031", "Name": "Angela Carter", "Gender": "Female", "Age": 26, "Age Group": "25-34", "Customer Feedback": "The product is okay, but the plastic feels lighter than I expected.", "Expected Sentiment": "Neutral", "Expected Category": "Product Quality", "Expected Urgency": "Low", "Reason for Label": "Mild product quality concern without dissatisfaction."}, {"ID": "F032", "Name": "Samantha Allen", "Gender": "Female", "Age": 37, "Age Group": "35-44", "Customer Feedback": "Can you confirm whether this item is supposed to have a small gap near the hinge?", "Expected Sentiment": "Neutral", "Expected Category": "Product Quality", "Expected Urgency": "Medium", "Reason for Label": "Potential quality defect question needs review."}, {"ID": "F033", "Name": "Maria Hernandez", "Gender": "Female", "Age": 43, "Age Group": "35-44", "Customer Feedback": "The shirt fabric is thinner than I thought from the description.", "Expected Sentiment": "Neutral", "Expected Category": "Product Quality", "Expected Urgency": "Low", "Reason for Label": "Expectation mismatch with moderate concern."}, {"ID": "F034", "Name": "Brandon Lee", "Gender": "Male", "Age": 36, "Age Group": "35-44", "Customer Feedback": "The lamp works, but one corner has a small cosmetic scratch.", "Expected Sentiment": "Neutral", "Expected Category": "Product Quality", "Expected Urgency": "Medium", "Reason for Label": "Minor defect with product still usable."}, {"ID": "F035", "Name": "Donna Thomas", "Gender": "Female", "Age": 22, "Age Group": "18-24", "Customer Feedback": "The table color looks different under normal room lighting than on the website.", "Expected Sentiment": "Neutral", "Expected Category": "Product Quality", "Expected Urgency": "Low", "Reason for Label": "Product appearance mismatch but not urgent."}, {"ID": "F036", "Name": "Richard Campbell", "Gender": "Male", "Age": 36, "Age Group": "35-44", "Customer Feedback": "The zipper broke the first time I used the bag.", "Expected Sentiment": "Negative", "Expected Category": "Product Quality", "Expected Urgency": "High", "Reason for Label": "Immediate product failure after first use."}, {"ID": "F037", "Name": "Charles Nelson", "Gender": "Male", "Age": 43, "Age Group": "35-44", "Customer Feedback": "The screen has dead pixels right out of the box.", "Expected Sentiment": "Negative", "Expected Category": "Product Quality", "Expected Urgency": "High", "Reason for Label": "Defective electronics require replacement/escalation."}, {"ID": "F038", "Name": "Paul King", "Gender": "Male", "Age": 61, "Age Group": "55-64", "Customer Feedback": "The chair leg is uneven and unsafe to sit on.", "Expected Sentiment": "Negative", "Expected Category": "Product Quality", "Expected Urgency": "High", "Reason for Label": "Product defect creates safety/use risk."}, {"ID": "F039", "Name": "Stephen Carter", "Gender": "Male", "Age": 48, "Age Group": "45-54", "Customer Feedback": "The product stopped working after three days and I want a replacement.", "Expected Sentiment": "Negative", "Expected Category": "Product Quality", "Expected Urgency": "High", "Reason for Label": "Early failure and replacement request."}, {"ID": "F040", "Name": "Stephanie Nelson", "Gender": "Female", "Age": 42, "Age Group": "35-44", "Customer Feedback": "The fabric started tearing after one wash even though I followed the instructions.", "Expected Sentiment": "Negative", "Expected Category": "Product Quality", "Expected Urgency": "Medium", "Reason for Label": "Quality failure after normal use."}, {"ID": "F041", "Name": "Jessica Thomas", "Gender": "Female", "Age": 30, "Age Group": "25-34", "Customer Feedback": "The item smells strongly like chemicals and I cannot use it indoors.", "Expected Sentiment": "Negative", "Expected Category": "Product Quality", "Expected Urgency": "High", "Reason for Label": "Product quality issue with potential health/safety concern."}, {"ID": "F042", "Name": "Scott Scott", "Gender": "Male", "Age": 28, "Age Group": "25-34", "Customer Feedback": "The coffee maker leaks from the bottom every time I use it.", "Expected Sentiment": "Negative", "Expected Category": "Product Quality", "Expected Urgency": "High", "Reason for Label": "Functional defect causing leakage."}, {"ID": "F043", "Name": "William Rivera", "Gender": "Male", "Age": 38, "Age Group": "35-44", "Customer Feedback": "The toy arrived with loose parts and I am not comfortable giving it to my child.", "Expected Sentiment": "Negative", "Expected Category": "Product Quality", "Expected Urgency": "High", "Reason for Label": "Product quality issue with child safety concern."}, {"ID": "F044", "Name": "Robert Kumar", "Gender": "Male", "Age": 33, "Age Group": "25-34", "Customer Feedback": "The paint is already peeling after one week.", "Expected Sentiment": "Negative", "Expected Category": "Product Quality", "Expected Urgency": "Medium", "Reason for Label": "Premature wear indicates poor quality."}, {"ID": "F045", "Name": "Andrew Nelson", "Gender": "Male", "Age": 43, "Age Group": "35-44", "Customer Feedback": "The size chart was misleading and the product does not fit at all.", "Expected Sentiment": "Negative", "Expected Category": "Product Quality", "Expected Urgency": "Medium", "Reason for Label": "Product mismatch/quality of information issue."}, {"ID": "F046", "Name": "Jack Mensah", "Gender": "Male", "Age": 64, "Age Group": "55-64", "Customer Feedback": "Two pieces were missing from the furniture kit, so I cannot assemble it.", "Expected Sentiment": "Negative", "Expected Category": "Product Quality", "Expected Urgency": "High", "Reason for Label": "Missing parts prevent product use."}, {"ID": "F047", "Name": "Ashley Patel", "Gender": "Female", "Age": 41, "Age Group": "35-44", "Customer Feedback": "The receipt was clear and matched the amount I expected to pay.", "Expected Sentiment": "Positive", "Expected Category": "Billing", "Expected Urgency": "Low", "Reason for Label": "Positive billing clarity feedback."}, {"ID": "F048", "Name": "Joseph Miller", "Gender": "Male", "Age": 40, "Age Group": "35-44", "Customer Feedback": "I appreciated the discount being applied automatically at checkout.", "Expected Sentiment": "Positive", "Expected Category": "Billing", "Expected Urgency": "Low", "Reason for Label": "Customer praises correct promotion handling."}, {"ID": "F049", "Name": "Rebecca Robinson", "Gender": "Female", "Age": 55, "Age Group": "55-64", "Customer Feedback": "The invoice format is easy to understand.", "Expected Sentiment": "Positive", "Expected Category": "Billing", "Expected Urgency": "Low", "Reason for Label": "Positive comment about billing documentation."}, {"ID": "F050", "Name": "David Sanchez", "Gender": "Male", "Age": 46, "Age Group": "45-54", "Customer Feedback": "Customer service corrected the coupon issue quickly before my card was charged.", "Expected Sentiment": "Positive", "Expected Category": "Billing", "Expected Urgency": "Medium", "Reason for Label": "Billing issue resolved before charge; moderate due payment impact."}, {"ID": "F051", "Name": "Anthony Gonzalez", "Gender": "Male", "Age": 37, "Age Group": "35-44", "Customer Feedback": "The refund credit posted faster than expected.", "Expected Sentiment": "Positive", "Expected Category": "Billing", "Expected Urgency": "Low", "Reason for Label": "Positive billing/refund processing feedback."}, {"ID": "F052", "Name": "Nancy Moore", "Gender": "Female", "Age": 36, "Age Group": "35-44", "Customer Feedback": "Can you explain why the tax amount changed at checkout?", "Expected Sentiment": "Neutral", "Expected Category": "Billing", "Expected Urgency": "Medium", "Reason for Label": "Billing question that needs explanation."}, {"ID": "F053", "Name": "Brenda Miller", "Gender": "Female", "Age": 22, "Age Group": "18-24", "Customer Feedback": "I need a copy of the invoice for my order.", "Expected Sentiment": "Neutral", "Expected Category": "Billing", "Expected Urgency": "Low", "Reason for Label": "Routine billing documentation request."}, {"ID": "F054", "Name": "Richard Mensah", "Gender": "Male", "Age": 48, "Age Group": "45-54", "Customer Feedback": "Does the store credit expire if I do not use it this month?", "Expected Sentiment": "Neutral", "Expected Category": "Billing", "Expected Urgency": "Low", "Reason for Label": "General billing/store credit question."}, {"ID": "F055", "Name": "Jason Young", "Gender": "Male", "Age": 41, "Age Group": "35-44", "Customer Feedback": "The promo code says applied, but the total did not change.", "Expected Sentiment": "Neutral", "Expected Category": "Billing", "Expected Urgency": "Medium", "Reason for Label": "Potential billing calculation issue."}, {"ID": "F056", "Name": "Daniel Harris", "Gender": "Male", "Age": 21, "Age Group": "18-24", "Customer Feedback": "I was charged today, but the order still shows pending.", "Expected Sentiment": "Neutral", "Expected Category": "Billing", "Expected Urgency": "Medium", "Reason for Label": "Billing/order status inconsistency."}, {"ID": "F057", "Name": "Cynthia Jackson", "Gender": "Female", "Age": 33, "Age Group": "25-34", "Customer Feedback": "Can you confirm whether my card will be charged when the item ships?", "Expected Sentiment": "Neutral", "Expected Category": "Billing", "Expected Urgency": "Low", "Reason for Label": "General billing timing question."}, {"ID": "F058", "Name": "Karen Gonzalez", "Gender": "Female", "Age": 25, "Age Group": "25-34", "Customer Feedback": "The payment page charged me twice for the same order.", "Expected Sentiment": "Negative", "Expected Category": "Billing", "Expected Urgency": "High", "Reason for Label": "Duplicate charge is urgent billing error."}, {"ID": "F059", "Name": "Dennis Lee", "Gender": "Male", "Age": 22, "Age Group": "18-24", "Customer Feedback": "I was billed for an item that was cancelled last week.", "Expected Sentiment": "Negative", "Expected Category": "Billing", "Expected Urgency": "High", "Reason for Label": "Charge for cancelled item requires immediate correction."}, {"ID": "F060", "Name": "Angela Okafor", "Gender": "Female", "Age": 47, "Age Group": "45-54", "Customer Feedback": "My refund was approved, but the money still has not returned after 15 days.", "Expected Sentiment": "Negative", "Expected Category": "Billing", "Expected Urgency": "High", "Reason for Label": "Delayed refund with financial impact."}, {"ID": "F061", "Name": "Eric Garcia", "Gender": "Male", "Age": 46, "Age Group": "45-54", "Customer Feedback": "The invoice shows a higher price than the price shown at checkout.", "Expected Sentiment": "Negative", "Expected Category": "Billing", "Expected Urgency": "High", "Reason for Label": "Price discrepancy and overcharge."}, {"ID": "F062", "Name": "Frank Kumar", "Gender": "Male", "Age": 26, "Age Group": "25-34", "Customer Feedback": "I was charged for express shipping even though I selected free standard shipping.", "Expected Sentiment": "Negative", "Expected Category": "Billing", "Expected Urgency": "High", "Reason for Label": "Wrong shipping charge requires correction."}, {"ID": "F063", "Name": "Scott Hill", "Gender": "Male", "Age": 18, "Age Group": "18-24", "Customer Feedback": "The subscription renewed without warning and I want the charge reversed.", "Expected Sentiment": "Negative", "Expected Category": "Billing", "Expected Urgency": "High", "Reason for Label": "Unexpected recurring charge and refund demand."}, {"ID": "F064", "Name": "Christine Nguyen", "Gender": "Female", "Age": 40, "Age Group": "35-44", "Customer Feedback": "Your system split my order and charged separate shipping fees without asking me.", "Expected Sentiment": "Negative", "Expected Category": "Billing", "Expected Urgency": "Medium", "Reason for Label": "Unexpected fees and billing dissatisfaction."}, {"ID": "F065", "Name": "Margaret Nelson", "Gender": "Female", "Age": 48, "Age Group": "45-54", "Customer Feedback": "I have contacted support three times about this incorrect charge and nobody fixed it.", "Expected Sentiment": "Negative", "Expected Category": "Billing", "Expected Urgency": "High", "Reason for Label": "Repeated unresolved billing complaint."}, {"ID": "F066", "Name": "Stephanie Rodriguez", "Gender": "Female", "Age": 39, "Age Group": "35-44", "Customer Feedback": "The gift card balance disappeared after checkout failed.", "Expected Sentiment": "Negative", "Expected Category": "Billing", "Expected Urgency": "High", "Reason for Label": "Payment failure caused lost stored value."}, {"ID": "F067", "Name": "Michelle Mensah", "Gender": "Female", "Age": 46, "Age Group": "45-54", "Customer Feedback": "I was charged before the item was even available to ship.", "Expected Sentiment": "Negative", "Expected Category": "Billing", "Expected Urgency": "Medium", "Reason for Label": "Billing timing issue without direct escalation."}, {"ID": "F068", "Name": "Jacob Flores", "Gender": "Male", "Age": 66, "Age Group": "65+", "Customer Feedback": "The discount disappeared after I entered my payment information.", "Expected Sentiment": "Negative", "Expected Category": "Billing", "Expected Urgency": "Medium", "Reason for Label": "Billing/promo issue affecting purchase total."}, {"ID": "F069", "Name": "Stephen Wilson", "Gender": "Male", "Age": 37, "Age Group": "35-44", "Customer Feedback": "The support agent was patient and solved my issue in one chat.", "Expected Sentiment": "Positive", "Expected Category": "Customer Service", "Expected Urgency": "Low", "Reason for Label": "Positive customer service experience."}, {"ID": "F070", "Name": "Barbara Ali", "Gender": "Female", "Age": 29, "Age Group": "25-34", "Customer Feedback": "Your phone support team was polite and explained everything clearly.", "Expected Sentiment": "Positive", "Expected Category": "Customer Service", "Expected Urgency": "Low", "Reason for Label": "Praise for service quality."}, {"ID": "F071", "Name": "Ryan Wang", "Gender": "Male", "Age": 39, "Age Group": "35-44", "Customer Feedback": "The representative followed up the next day to make sure the issue was fixed.", "Expected Sentiment": "Positive", "Expected Category": "Customer Service", "Expected Urgency": "Low", "Reason for Label": "Positive follow-up from customer service."}, {"ID": "F072", "Name": "Gregory Chen", "Gender": "Male", "Age": 36, "Age Group": "35-44", "Customer Feedback": "I had a shipping problem, but the agent handled it professionally.", "Expected Sentiment": "Positive", "Expected Category": "Customer Service", "Expected Urgency": "Medium", "Reason for Label": "Positive service handling a moderate issue."}, {"ID": "F073", "Name": "Paul Davis", "Gender": "Male", "Age": 63, "Age Group": "55-64", "Customer Feedback": "The live chat response was quick and helpful.", "Expected Sentiment": "Positive", "Expected Category": "Customer Service", "Expected Urgency": "Low", "Reason for Label": "Compliment about response speed and help."}, {"ID": "F074", "Name": "Andrew Jackson", "Gender": "Male", "Age": 40, "Age Group": "35-44", "Customer Feedback": "The agent apologized and gave me a clear next step.", "Expected Sentiment": "Positive", "Expected Category": "Customer Service", "Expected Urgency": "Low", "Reason for Label": "Positive support interaction."}, {"ID": "F075", "Name": "Frank Green", "Gender": "Male", "Age": 53, "Age Group": "45-54", "Customer Feedback": "I was transferred once, but the second agent resolved everything.", "Expected Sentiment": "Positive", "Expected Category": "Customer Service", "Expected Urgency": "Medium", "Reason for Label": "Mixed service experience, resolved after transfer."}, {"ID": "F076", "Name": "Dorothy Ahmed", "Gender": "Female", "Age": 55, "Age Group": "55-64", "Customer Feedback": "Support answered my question about sizing without pushing me to buy more.", "Expected Sentiment": "Positive", "Expected Category": "Customer Service", "Expected Urgency": "Low", "Reason for Label": "Helpful service compliment."}, {"ID": "F077", "Name": "Samuel Ramirez", "Gender": "Male", "Age": 45, "Age Group": "45-54", "Customer Feedback": "The email response was slower than expected, but the answer was complete.", "Expected Sentiment": "Neutral", "Expected Category": "Customer Service", "Expected Urgency": "Medium", "Reason for Label": "Service was delayed but adequate."}, {"ID": "F078", "Name": "Brian Roberts", "Gender": "Male", "Age": 20, "Age Group": "18-24", "Customer Feedback": "Can someone call me instead of sending another automated email?", "Expected Sentiment": "Neutral", "Expected Category": "Customer Service", "Expected Urgency": "Medium", "Reason for Label": "Customer requests different support channel."}, {"ID": "F079", "Name": "Dennis Lewis", "Gender": "Male", "Age": 41, "Age Group": "35-44", "Customer Feedback": "The chatbot could not answer my question, so I need a real person.", "Expected Sentiment": "Neutral", "Expected Category": "Customer Service", "Expected Urgency": "Medium", "Reason for Label": "Support escalation request without anger."}, {"ID": "F080", "Name": "Thomas Jones", "Gender": "Male", "Age": 57, "Age Group": "55-64", "Customer Feedback": "I received two different answers from two agents about the same return.", "Expected Sentiment": "Neutral", "Expected Category": "Customer Service", "Expected Urgency": "Medium", "Reason for Label": "Inconsistent service information."}, {"ID": "F081", "Name": "Timothy Nguyen", "Gender": "Male", "Age": 41, "Age Group": "35-44", "Customer Feedback": "How long should it take for support to reply to a warranty question?", "Expected Sentiment": "Neutral", "Expected Category": "Customer Service", "Expected Urgency": "Low", "Reason for Label": "General service process question."}, {"ID": "F082", "Name": "Robert Martin", "Gender": "Male", "Age": 25, "Age Group": "25-34", "Customer Feedback": "The first agent closed my chat before I finished explaining the problem.", "Expected Sentiment": "Negative", "Expected Category": "Customer Service", "Expected Urgency": "Medium", "Reason for Label": "Poor service interaction."}, {"ID": "F083", "Name": "Margaret Baker", "Gender": "Female", "Age": 26, "Age Group": "25-34", "Customer Feedback": "I have been waiting four days for a reply and nobody is helping me.", "Expected Sentiment": "Negative", "Expected Category": "Customer Service", "Expected Urgency": "High", "Reason for Label": "Delayed service and strong unresolved issue."}, {"ID": "F084", "Name": "Heather Scott", "Gender": "Female", "Age": 61, "Age Group": "55-64", "Customer Feedback": "The agent was rude and blamed me for the broken item.", "Expected Sentiment": "Negative", "Expected Category": "Customer Service", "Expected Urgency": "High", "Reason for Label": "Negative service behavior and product issue."}, {"ID": "F085", "Name": "Steven Kumar", "Gender": "Male", "Age": 27, "Age Group": "25-34", "Customer Feedback": "I asked for a supervisor twice and was ignored.", "Expected Sentiment": "Negative", "Expected Category": "Customer Service", "Expected Urgency": "High", "Reason for Label": "Escalation request ignored."}, {"ID": "F086", "Name": "Patricia Lopez", "Gender": "Female", "Age": 50, "Age Group": "45-54", "Customer Feedback": "The chat kept sending canned answers that did not address my billing problem.", "Expected Sentiment": "Negative", "Expected Category": "Customer Service", "Expected Urgency": "Medium", "Reason for Label": "Unhelpful support with billing issue."}, {"ID": "F087", "Name": "Christine Kumar", "Gender": "Female", "Age": 48, "Age Group": "45-54", "Customer Feedback": "Your support team promised a replacement last week, but nothing happened.", "Expected Sentiment": "Negative", "Expected Category": "Customer Service", "Expected Urgency": "High", "Reason for Label": "Broken promise and unresolved action."}, {"ID": "F088", "Name": "Lisa Patel", "Gender": "Female", "Age": 51, "Age Group": "45-54", "Customer Feedback": "I was disconnected after waiting 45 minutes on hold.", "Expected Sentiment": "Negative", "Expected Category": "Customer Service", "Expected Urgency": "Medium", "Reason for Label": "Service access failure."}, {"ID": "F089", "Name": "Gary Anderson", "Gender": "Male", "Age": 32, "Age Group": "25-34", "Customer Feedback": "The representative gave me the wrong return instructions and now my label expired.", "Expected Sentiment": "Negative", "Expected Category": "Customer Service", "Expected Urgency": "High", "Reason for Label": "Incorrect service caused return problem."}, {"ID": "F090", "Name": "Donna Chen", "Gender": "Female", "Age": 48, "Age Group": "45-54", "Customer Feedback": "I am extremely frustrated because nobody has ownership of my case.", "Expected Sentiment": "Negative", "Expected Category": "Customer Service", "Expected Urgency": "High", "Reason for Label": "Angry customer and unresolved support ownership."}, {"ID": "F091", "Name": "Michael Nelson", "Gender": "Male", "Age": 30, "Age Group": "25-34", "Customer Feedback": "The return process was simple and the prepaid label printed right away.", "Expected Sentiment": "Positive", "Expected Category": "Returns/Refunds", "Expected Urgency": "Low", "Reason for Label": "Positive return experience."}, {"ID": "F092", "Name": "Barbara Roberts", "Gender": "Female", "Age": 33, "Age Group": "25-34", "Customer Feedback": "My refund was processed quickly after the warehouse received my item.", "Expected Sentiment": "Positive", "Expected Category": "Returns/Refunds", "Expected Urgency": "Low", "Reason for Label": "Positive refund completion feedback."}, {"ID": "F093", "Name": "Debra Wang", "Gender": "Female", "Age": 35, "Age Group": "35-44", "Customer Feedback": "I appreciate the easy exchange option for a different size.", "Expected Sentiment": "Positive", "Expected Category": "Returns/Refunds", "Expected Urgency": "Low", "Reason for Label": "Positive returns/exchange feedback."}, {"ID": "F094", "Name": "Paul Lopez", "Gender": "Male", "Age": 39, "Age Group": "35-44", "Customer Feedback": "The return instructions were clear and easy to follow.", "Expected Sentiment": "Positive", "Expected Category": "Returns/Refunds", "Expected Urgency": "Low", "Reason for Label": "Compliment about return documentation."}, {"ID": "F095", "Name": "Joseph Hill", "Gender": "Male", "Age": 30, "Age Group": "25-34", "Customer Feedback": "Support approved my refund after reviewing the damaged item photos.", "Expected Sentiment": "Positive", "Expected Category": "Returns/Refunds", "Expected Urgency": "Medium", "Reason for Label": "Refund issue resolved; moderate due damaged product."}, {"ID": "F096", "Name": "Nicole Allen", "Gender": "Female", "Age": 22, "Age Group": "18-24", "Customer Feedback": "The store credit appeared the same day my return was scanned.", "Expected Sentiment": "Positive", "Expected Category": "Returns/Refunds", "Expected Urgency": "Low", "Reason for Label": "Positive refund/store credit timing."}, {"ID": "F097", "Name": "Paul Williams", "Gender": "Male", "Age": 45, "Age Group": "45-54", "Customer Feedback": "Can I exchange this item for a different color instead of returning it?", "Expected Sentiment": "Neutral", "Expected Category": "Returns/Refunds", "Expected Urgency": "Low", "Reason for Label": "Routine exchange question."}, {"ID": "F098", "Name": "Timothy Ramirez", "Gender": "Male", "Age": 23, "Age Group": "18-24", "Customer Feedback": "What is the deadline for returning a holiday gift?", "Expected Sentiment": "Neutral", "Expected Category": "Returns/Refunds", "Expected Urgency": "Low", "Reason for Label": "General return policy question."}, {"ID": "F099", "Name": "Helen Lee", "Gender": "Female", "Age": 36, "Age Group": "35-44", "Customer Feedback": "I started a return but need help finding the shipping label.", "Expected Sentiment": "Neutral", "Expected Category": "Returns/Refunds", "Expected Urgency": "Medium", "Reason for Label": "Return process assistance needed."}, {"ID": "F100", "Name": "Angela Martin", "Gender": "Female", "Age": 40, "Age Group": "35-44", "Customer Feedback": "Does the refund go back to my card or become store credit?", "Expected Sentiment": "Neutral", "Expected Category": "Returns/Refunds", "Expected Urgency": "Low", "Reason for Label": "General refund process question."}, {"ID": "F101", "Name": "Rachel Jackson", "Gender": "Female", "Age": 38, "Age Group": "35-44", "Customer Feedback": "The portal says my item is not eligible for return, but it arrived yesterday.", "Expected Sentiment": "Neutral", "Expected Category": "Returns/Refunds", "Expected Urgency": "Medium", "Reason for Label": "Possible return eligibility issue."}, {"ID": "F102", "Name": "Christine Harris", "Gender": "Female", "Age": 37, "Age Group": "35-44", "Customer Feedback": "I returned two items in one box. Will both refunds be processed together?", "Expected Sentiment": "Neutral", "Expected Category": "Returns/Refunds", "Expected Urgency": "Low", "Reason for Label": "Routine refund tracking question."}, {"ID": "F103", "Name": "Stephanie Scott", "Gender": "Female", "Age": 49, "Age Group": "45-54", "Customer Feedback": "I want a refund now because the product arrived broken and I am tired of waiting.", "Expected Sentiment": "Negative", "Expected Category": "Returns/Refunds", "Expected Urgency": "High", "Reason for Label": "Refund demand with damaged item and frustration."}, {"ID": "F104", "Name": "Margaret Ramirez", "Gender": "Female", "Age": 54, "Age Group": "45-54", "Customer Feedback": "My return was delivered to your warehouse ten days ago and I still have no refund.", "Expected Sentiment": "Negative", "Expected Category": "Returns/Refunds", "Expected Urgency": "High", "Reason for Label": "Delayed refund after confirmed return."}, {"ID": "F105", "Name": "Cynthia Lewis", "Gender": "Female", "Age": 28, "Age Group": "25-34", "Customer Feedback": "The return label expired before support responded to me.", "Expected Sentiment": "Negative", "Expected Category": "Returns/Refunds", "Expected Urgency": "Medium", "Reason for Label": "Return process issue caused by delayed support."}, {"ID": "F106", "Name": "Catherine Hernandez", "Gender": "Female", "Age": 39, "Age Group": "35-44", "Customer Feedback": "I was charged a restocking fee even though the item was defective.", "Expected Sentiment": "Negative", "Expected Category": "Returns/Refunds", "Expected Urgency": "High", "Reason for Label": "Refund dispute involving defective item."}, {"ID": "F107", "Name": "Elizabeth Chen", "Gender": "Female", "Age": 58, "Age Group": "55-64", "Customer Feedback": "The exchange arrived in the wrong size again.", "Expected Sentiment": "Negative", "Expected Category": "Returns/Refunds", "Expected Urgency": "Medium", "Reason for Label": "Repeat exchange/fulfillment issue."}, {"ID": "F108", "Name": "Sandra Kim", "Gender": "Female", "Age": 25, "Age Group": "25-34", "Customer Feedback": "I keep getting denied a refund even though the item was never delivered.", "Expected Sentiment": "Negative", "Expected Category": "Returns/Refunds", "Expected Urgency": "High", "Reason for Label": "Refund denial for non-delivery requires escalation."}, {"ID": "F109", "Name": "Steven Walker", "Gender": "Male", "Age": 36, "Age Group": "35-44", "Customer Feedback": "The refund amount is missing the shipping fee I was told would be included.", "Expected Sentiment": "Negative", "Expected Category": "Returns/Refunds", "Expected Urgency": "High", "Reason for Label": "Incorrect refund amount."}, {"ID": "F110", "Name": "Rebecca Ali", "Gender": "Female", "Age": 38, "Age Group": "35-44", "Customer Feedback": "This is my third request for a return label and nobody has sent it.", "Expected Sentiment": "Negative", "Expected Category": "Returns/Refunds", "Expected Urgency": "High", "Reason for Label": "Repeated unresolved return request."}, {"ID": "F111", "Name": "Amy Sanchez", "Gender": "Female", "Age": 25, "Age Group": "25-34", "Customer Feedback": "Your policy page says free returns, but checkout deducted a return fee.", "Expected Sentiment": "Negative", "Expected Category": "Returns/Refunds", "Expected Urgency": "Medium", "Reason for Label": "Policy mismatch and fee complaint."}, {"ID": "F112", "Name": "Tyler Ramirez", "Gender": "Male", "Age": 33, "Age Group": "25-34", "Customer Feedback": "If this refund is not fixed today, I will dispute the charge with my bank.", "Expected Sentiment": "Negative", "Expected Category": "Returns/Refunds", "Expected Urgency": "High", "Reason for Label": "Escalation/chargeback language makes it urgent."}, {"ID": "F113", "Name": "Linda Scott", "Gender": "Female", "Age": 26, "Age Group": "25-34", "Customer Feedback": "The new order dashboard is easier to read than the old version.", "Expected Sentiment": "Positive", "Expected Category": "Website/App Issue", "Expected Urgency": "Low", "Reason for Label": "Positive website/app usability feedback."}, {"ID": "F114", "Name": "Sarah Kim", "Gender": "Female", "Age": 43, "Age Group": "35-44", "Customer Feedback": "Checkout was quick and I liked that my address was saved correctly.", "Expected Sentiment": "Positive", "Expected Category": "Website/App Issue", "Expected Urgency": "Low", "Reason for Label": "Positive app checkout experience."}, {"ID": "F115", "Name": "Maria Ahmed", "Gender": "Female", "Age": 33, "Age Group": "25-34", "Customer Feedback": "The app made it easy to reorder my usual items.", "Expected Sentiment": "Positive", "Expected Category": "Website/App Issue", "Expected Urgency": "Low", "Reason for Label": "Positive app feature feedback."}, {"ID": "F116", "Name": "Brenda Lewis", "Gender": "Female", "Age": 62, "Age Group": "55-64", "Customer Feedback": "I like the product filter options on the website.", "Expected Sentiment": "Positive", "Expected Category": "Website/App Issue", "Expected Urgency": "Low", "Reason for Label": "Positive website navigation feedback."}, {"ID": "F117", "Name": "Dorothy Carter", "Gender": "Female", "Age": 29, "Age Group": "25-34", "Customer Feedback": "The mobile app loaded fast today and the cart worked smoothly.", "Expected Sentiment": "Positive", "Expected Category": "Website/App Issue", "Expected Urgency": "Low", "Reason for Label": "Positive app performance feedback."}, {"ID": "F118", "Name": "Samantha Thomas", "Gender": "Female", "Age": 26, "Age Group": "25-34", "Customer Feedback": "The website showed clear delivery estimates before checkout.", "Expected Sentiment": "Positive", "Expected Category": "Website/App Issue", "Expected Urgency": "Low", "Reason for Label": "Positive web information display."}, {"ID": "F119", "Name": "Ashley Moore", "Gender": "Female", "Age": 33, "Age Group": "25-34", "Customer Feedback": "The password reset page worked on the second try.", "Expected Sentiment": "Positive", "Expected Category": "Website/App Issue", "Expected Urgency": "Medium", "Reason for Label": "Mostly positive but indicates a minor prior issue."}, {"ID": "F120", "Name": "Charles Martinez", "Gender": "Male", "Age": 27, "Age Group": "25-34", "Customer Feedback": "The website is loading slowly on my phone this morning.", "Expected Sentiment": "Neutral", "Expected Category": "Website/App Issue", "Expected Urgency": "Medium", "Reason for Label": "Performance issue without severe impact."}, {"ID": "F121", "Name": "William Clark", "Gender": "Male", "Age": 33, "Age Group": "25-34", "Customer Feedback": "Can you add a way to compare two products side by side?", "Expected Sentiment": "Neutral", "Expected Category": "Website/App Issue", "Expected Urgency": "Low", "Reason for Label": "Feature request for website/app."}, {"ID": "F122", "Name": "Rebecca Brown", "Gender": "Female", "Age": 31, "Age Group": "25-34", "Customer Feedback": "The app logged me out after I added items to my cart.", "Expected Sentiment": "Neutral", "Expected Category": "Website/App Issue", "Expected Urgency": "Medium", "Reason for Label": "App session issue that affects shopping."}, {"ID": "F123", "Name": "Heather Nguyen", "Gender": "Female", "Age": 55, "Age Group": "55-64", "Customer Feedback": "I cannot find where to update my billing address.", "Expected Sentiment": "Neutral", "Expected Category": "Website/App Issue", "Expected Urgency": "Medium", "Reason for Label": "Usability issue affecting account/billing info."}, {"ID": "F124", "Name": "Kathleen Smith", "Gender": "Female", "Age": 59, "Age Group": "55-64", "Customer Feedback": "The search results show out-of-stock items first.", "Expected Sentiment": "Neutral", "Expected Category": "Website/App Issue", "Expected Urgency": "Low", "Reason for Label": "Minor website relevance issue."}, {"ID": "F125", "Name": "Rebecca Wright", "Gender": "Female", "Age": 53, "Age Group": "45-54", "Customer Feedback": "The website says my coupon is valid, but checkout will not accept it.", "Expected Sentiment": "Neutral", "Expected Category": "Website/App Issue", "Expected Urgency": "Medium", "Reason for Label": "Website/app promo validation issue."}, {"ID": "F126", "Name": "Nicholas Anderson", "Gender": "Male", "Age": 32, "Age Group": "25-34", "Customer Feedback": "Can you make the order history filter easier to use?", "Expected Sentiment": "Neutral", "Expected Category": "Website/App Issue", "Expected Urgency": "Low", "Reason for Label": "Usability improvement suggestion."}, {"ID": "F127", "Name": "Ronald Perez", "Gender": "Male", "Age": 41, "Age Group": "35-44", "Customer Feedback": "The checkout page froze after I entered my card, and I do not know if I was charged.", "Expected Sentiment": "Negative", "Expected Category": "Website/App Issue", "Expected Urgency": "High", "Reason for Label": "Checkout failure tied to possible billing charge."}, {"ID": "F128", "Name": "Jacob Okafor", "Gender": "Male", "Age": 22, "Age Group": "18-24", "Customer Feedback": "The app keeps crashing when I try to submit a return.", "Expected Sentiment": "Negative", "Expected Category": "Website/App Issue", "Expected Urgency": "High", "Reason for Label": "App failure blocks return process."}, {"ID": "F129", "Name": "Edward Nguyen", "Gender": "Male", "Age": 35, "Age Group": "35-44", "Customer Feedback": "I cannot log in and support keeps sending me to the same broken reset link.", "Expected Sentiment": "Negative", "Expected Category": "Website/App Issue", "Expected Urgency": "High", "Reason for Label": "Login issue with failed support loop."}, {"ID": "F130", "Name": "Raymond Ramirez", "Gender": "Male", "Age": 21, "Age Group": "18-24", "Customer Feedback": "My cart emptied twice after I spent 30 minutes adding items.", "Expected Sentiment": "Negative", "Expected Category": "Website/App Issue", "Expected Urgency": "Medium", "Reason for Label": "Website reliability issue causing frustration."}, {"ID": "F131", "Name": "David Taylor", "Gender": "Male", "Age": 28, "Age Group": "25-34", "Customer Feedback": "The website showed an item in stock, but after payment it became backordered.", "Expected Sentiment": "Negative", "Expected Category": "Website/App Issue", "Expected Urgency": "High", "Reason for Label": "Inventory display issue after payment."}, {"ID": "F132", "Name": "Michelle Perez", "Gender": "Female", "Age": 51, "Age Group": "45-54", "Customer Feedback": "The checkout page changed the delivery address without warning.", "Expected Sentiment": "Negative", "Expected Category": "Website/App Issue", "Expected Urgency": "High", "Reason for Label": "Website error could cause wrong delivery."}, {"ID": "F133", "Name": "Maria Wang", "Gender": "Female", "Age": 26, "Age Group": "25-34", "Customer Feedback": "The app submitted my order twice after one button click.", "Expected Sentiment": "Negative", "Expected Category": "Website/App Issue", "Expected Urgency": "High", "Reason for Label": "Duplicate order/app issue with billing impact."}, {"ID": "F134", "Name": "Patricia Mitchell", "Gender": "Female", "Age": 40, "Age Group": "35-44", "Customer Feedback": "I keep seeing an error message when uploading photos for a damaged item claim.", "Expected Sentiment": "Negative", "Expected Category": "Website/App Issue", "Expected Urgency": "Medium", "Reason for Label": "App issue blocks claim documentation."}, {"ID": "F135", "Name": "Raymond Jones", "Gender": "Male", "Age": 45, "Age Group": "45-54", "Customer Feedback": "Overall, I had a great experience and will order again.", "Expected Sentiment": "Positive", "Expected Category": "General Feedback", "Expected Urgency": "Low", "Reason for Label": "General positive customer satisfaction."}, {"ID": "F136", "Name": "Steven Gonzalez", "Gender": "Male", "Age": 54, "Age Group": "45-54", "Customer Feedback": "I like the variety of products available on your site.", "Expected Sentiment": "Positive", "Expected Category": "General Feedback", "Expected Urgency": "Low", "Reason for Label": "Positive general brand/product selection feedback."}, {"ID": "F137", "Name": "Steven Rodriguez", "Gender": "Male", "Age": 36, "Age Group": "35-44", "Customer Feedback": "The packaging looked professional and the note inside was a nice touch.", "Expected Sentiment": "Positive", "Expected Category": "General Feedback", "Expected Urgency": "Low", "Reason for Label": "General compliment not tied to issue category."}, {"ID": "F138", "Name": "Jacob Hall", "Gender": "Male", "Age": 30, "Age Group": "25-34", "Customer Feedback": "Your prices are fair compared with other stores I checked.", "Expected Sentiment": "Positive", "Expected Category": "General Feedback", "Expected Urgency": "Low", "Reason for Label": "General positive value feedback."}, {"ID": "F139", "Name": "Brandon Hill", "Gender": "Male", "Age": 76, "Age Group": "65+", "Customer Feedback": "I appreciate the clear communication throughout the whole order.", "Expected Sentiment": "Positive", "Expected Category": "General Feedback", "Expected Urgency": "Low", "Reason for Label": "General positive experience."}, {"ID": "F140", "Name": "Tyler Chen", "Gender": "Male", "Age": 29, "Age Group": "25-34", "Customer Feedback": "This was my first order and everything went smoothly.", "Expected Sentiment": "Positive", "Expected Category": "General Feedback", "Expected Urgency": "Low", "Reason for Label": "General positive first-purchase experience."}, {"ID": "F141", "Name": "Scott Johnson", "Gender": "Male", "Age": 64, "Age Group": "55-64", "Customer Feedback": "The loyalty points program is easy to understand.", "Expected Sentiment": "Positive", "Expected Category": "General Feedback", "Expected Urgency": "Low", "Reason for Label": "Positive general program feedback."}, {"ID": "F142", "Name": "Stephanie Rivera", "Gender": "Female", "Age": 34, "Age Group": "25-34", "Customer Feedback": "I like the product recommendations I received after my order.", "Expected Sentiment": "Positive", "Expected Category": "General Feedback", "Expected Urgency": "Low", "Reason for Label": "General positive personalization feedback."}, {"ID": "F143", "Name": "Joseph Hall", "Gender": "Male", "Age": 54, "Age Group": "45-54", "Customer Feedback": "The packaging was simple and not wasteful.", "Expected Sentiment": "Positive", "Expected Category": "General Feedback", "Expected Urgency": "Low", "Reason for Label": "General positive sustainability/packaging comment."}, {"ID": "F144", "Name": "Justin Patel", "Gender": "Male", "Age": 22, "Age Group": "18-24", "Customer Feedback": "Your emails are helpful without feeling too frequent.", "Expected Sentiment": "Positive", "Expected Category": "General Feedback", "Expected Urgency": "Low", "Reason for Label": "General communication compliment."}, {"ID": "F145", "Name": "Christine White", "Gender": "Female", "Age": 23, "Age Group": "18-24", "Customer Feedback": "I would recommend this store to a friend.", "Expected Sentiment": "Positive", "Expected Category": "General Feedback", "Expected Urgency": "Low", "Reason for Label": "General positive endorsement."}, {"ID": "F146", "Name": "Mary Singh", "Gender": "Female", "Age": 32, "Age Group": "25-34", "Customer Feedback": "The order experience was good, but I wish there were more eco-friendly options.", "Expected Sentiment": "Positive", "Expected Category": "General Feedback", "Expected Urgency": "Low", "Reason for Label": "Mostly positive with a general improvement suggestion."}, {"ID": "F147", "Name": "Jeffrey White", "Gender": "Male", "Age": 42, "Age Group": "35-44", "Customer Feedback": "Do you plan to add more sizes for this product line?", "Expected Sentiment": "Neutral", "Expected Category": "General Feedback", "Expected Urgency": "Low", "Reason for Label": "General product availability question."}, {"ID": "F148", "Name": "Jeffrey Lopez", "Gender": "Male", "Age": 49, "Age Group": "45-54", "Customer Feedback": "Can I combine loyalty points with a sale discount?", "Expected Sentiment": "Neutral", "Expected Category": "General Feedback", "Expected Urgency": "Low", "Reason for Label": "General policy question."}, {"ID": "F149", "Name": "Cynthia Ramirez", "Gender": "Female", "Age": 54, "Age Group": "45-54", "Customer Feedback": "I am not sure which product is best for a gift.", "Expected Sentiment": "Neutral", "Expected Category": "General Feedback", "Expected Urgency": "Low", "Reason for Label": "General buying guidance request."}, {"ID": "F150", "Name": "Michelle Singh", "Gender": "Female", "Age": 26, "Age Group": "25-34", "Customer Feedback": "Please add more photos showing the product in use.", "Expected Sentiment": "Neutral", "Expected Category": "General Feedback", "Expected Urgency": "Low", "Reason for Label": "General content suggestion."}, {"ID": "F151", "Name": "Laura Thomas", "Gender": "Female", "Age": 54, "Age Group": "45-54", "Customer Feedback": "I noticed the product descriptions use different size terms in different places.", "Expected Sentiment": "Neutral", "Expected Category": "General Feedback", "Expected Urgency": "Medium", "Reason for Label": "General content consistency issue."}, {"ID": "F152", "Name": "Carol Johnson", "Gender": "Female", "Age": 40, "Age Group": "35-44", "Customer Feedback": "Is there a newsletter for new product launches?", "Expected Sentiment": "Neutral", "Expected Category": "General Feedback", "Expected Urgency": "Low", "Reason for Label": "General marketing/subscription question."}, {"ID": "F153", "Name": "Nicholas Wilson", "Gender": "Male", "Age": 29, "Age Group": "25-34", "Customer Feedback": "The overall experience was average and nothing stood out.", "Expected Sentiment": "Neutral", "Expected Category": "General Feedback", "Expected Urgency": "Low", "Reason for Label": "Neutral general feedback."}, {"ID": "F154", "Name": "Kimberly Ali", "Gender": "Female", "Age": 39, "Age Group": "35-44", "Customer Feedback": "The packaging had too much plastic for such a small item.", "Expected Sentiment": "Negative", "Expected Category": "General Feedback", "Expected Urgency": "Medium", "Reason for Label": "General sustainability complaint."}, {"ID": "F155", "Name": "Jonathan Gonzalez", "Gender": "Male", "Age": 23, "Age Group": "18-24", "Customer Feedback": "The promotional emails are too frequent and hard to unsubscribe from.", "Expected Sentiment": "Negative", "Expected Category": "General Feedback", "Expected Urgency": "Medium", "Reason for Label": "General communication complaint."}, {"ID": "F156", "Name": "Amy Scott", "Gender": "Female", "Age": 52, "Age Group": "45-54", "Customer Feedback": "I used to like this store, but the last few orders have been disappointing.", "Expected Sentiment": "Negative", "Expected Category": "General Feedback", "Expected Urgency": "Medium", "Reason for Label": "Broad negative experience with repeated dissatisfaction."}, {"ID": "F157", "Name": "Laura Patel", "Gender": "Female", "Age": 20, "Age Group": "18-24", "Customer Feedback": "Does this product contain latex or any common allergens?", "Expected Sentiment": "Neutral", "Expected Category": "Safety Concern", "Expected Urgency": "Medium", "Reason for Label": "Safety-related question about allergens."}, {"ID": "F158", "Name": "Edward Hall", "Gender": "Male", "Age": 34, "Age Group": "25-34", "Customer Feedback": "Can you confirm whether this charger is certified for indoor use?", "Expected Sentiment": "Neutral", "Expected Category": "Safety Concern", "Expected Urgency": "Medium", "Reason for Label": "Safety certification question."}, {"ID": "F159", "Name": "Kathleen Scott", "Gender": "Female", "Age": 41, "Age Group": "35-44", "Customer Feedback": "Is this toy appropriate for children under three years old?", "Expected Sentiment": "Neutral", "Expected Category": "Safety Concern", "Expected Urgency": "Medium", "Reason for Label": "Safety age suitability question."}, {"ID": "F160", "Name": "Amanda Hall", "Gender": "Female", "Age": 39, "Age Group": "35-44", "Customer Feedback": "The candle instructions mention ventilation. Is it safe to use in a small room?", "Expected Sentiment": "Neutral", "Expected Category": "Safety Concern", "Expected Urgency": "Medium", "Reason for Label": "Safety usage question requiring careful response."}, {"ID": "F161", "Name": "Sandra Davis", "Gender": "Female", "Age": 50, "Age Group": "45-54", "Customer Feedback": "The glass container shattered when I opened the box and cut my finger.", "Expected Sentiment": "Negative", "Expected Category": "Safety Concern", "Expected Urgency": "High", "Reason for Label": "Injury and broken glass require urgent safety escalation."}, {"ID": "F162", "Name": "Dennis Wright", "Gender": "Male", "Age": 57, "Age Group": "55-64", "Customer Feedback": "The charger sparked when I plugged it in.", "Expected Sentiment": "Negative", "Expected Category": "Safety Concern", "Expected Urgency": "High", "Reason for Label": "Electrical hazard requiring immediate escalation."}, {"ID": "F163", "Name": "Mark Mitchell", "Gender": "Male", "Age": 44, "Age Group": "35-44", "Customer Feedback": "The product became extremely hot after five minutes of use.", "Expected Sentiment": "Negative", "Expected Category": "Safety Concern", "Expected Urgency": "High", "Reason for Label": "Overheating creates safety risk."}, {"ID": "F164", "Name": "Susan Wang", "Gender": "Female", "Age": 28, "Age Group": "25-34", "Customer Feedback": "My child almost swallowed a small part that came loose from the toy.", "Expected Sentiment": "Negative", "Expected Category": "Safety Concern", "Expected Urgency": "High", "Reason for Label": "Child choking hazard."}, {"ID": "F165", "Name": "Nancy Martin", "Gender": "Female", "Age": 22, "Age Group": "18-24", "Customer Feedback": "The cleaning spray leaked in the box and caused a strong chemical smell.", "Expected Sentiment": "Negative", "Expected Category": "Safety Concern", "Expected Urgency": "High", "Reason for Label": "Chemical leak safety concern."}, {"ID": "F166", "Name": "Andrew Williams", "Gender": "Male", "Age": 73, "Age Group": "65+", "Customer Feedback": "The ladder step cracked while I was standing on it.", "Expected Sentiment": "Negative", "Expected Category": "Safety Concern", "Expected Urgency": "High", "Reason for Label": "Product failure during use with injury risk."}, {"ID": "F167", "Name": "Rachel Rodriguez", "Gender": "Female", "Age": 42, "Age Group": "35-44", "Customer Feedback": "The battery pack started smoking while charging.", "Expected Sentiment": "Negative", "Expected Category": "Safety Concern", "Expected Urgency": "High", "Reason for Label": "Fire/smoke hazard."}, {"ID": "F168", "Name": "James Torres", "Gender": "Male", "Age": 32, "Age Group": "25-34", "Customer Feedback": "The food container arrived with mold inside the sealed package.", "Expected Sentiment": "Negative", "Expected Category": "Safety Concern", "Expected Urgency": "High", "Reason for Label": "Potential contamination safety concern."}, {"ID": "F169", "Name": "Carol Lopez", "Gender": "Female", "Age": 69, "Age Group": "65+", "Customer Feedback": "The lamp cord has exposed wiring near the plug.", "Expected Sentiment": "Negative", "Expected Category": "Safety Concern", "Expected Urgency": "High", "Reason for Label": "Electrical safety hazard."}, {"ID": "F170", "Name": "Jessica Chen", "Gender": "Female", "Age": 21, "Age Group": "18-24", "Customer Feedback": "The baby product has a sharp edge that could scratch skin.", "Expected Sentiment": "Negative", "Expected Category": "Safety Concern", "Expected Urgency": "High", "Reason for Label": "Safety defect involving baby product."}, {"ID": "F171", "Name": "Justin Green", "Gender": "Male", "Age": 37, "Age Group": "35-44", "Customer Feedback": "The bike helmet arrived cracked, and I will not let my kid use it.", "Expected Sentiment": "Negative", "Expected Category": "Safety Concern", "Expected Urgency": "High", "Reason for Label": "Protective product defect and child safety risk."}, {"ID": "F172", "Name": "Justin Martin", "Gender": "Male", "Age": 19, "Age Group": "18-24", "Customer Feedback": "The medicine organizer arrived with a chemical residue on the inside.", "Expected Sentiment": "Negative", "Expected Category": "Safety Concern", "Expected Urgency": "High", "Reason for Label": "Potential contamination of health-related product."}, {"ID": "F173", "Name": "Larry Carter", "Gender": "Male", "Age": 34, "Age Group": "25-34", "Customer Feedback": "The chair collapsed the first time I sat on it.", "Expected Sentiment": "Negative", "Expected Category": "Safety Concern", "Expected Urgency": "High", "Reason for Label": "Product collapse creates injury risk."}, {"ID": "F174", "Name": "Tyler King", "Gender": "Male", "Age": 32, "Age Group": "25-34", "Customer Feedback": "The cookware handle loosened while I was carrying hot food.", "Expected Sentiment": "Negative", "Expected Category": "Safety Concern", "Expected Urgency": "High", "Reason for Label": "Burn/injury risk."}, {"ID": "F175", "Name": "Emma Ramirez", "Gender": "Female", "Age": 34, "Age Group": "25-34", "Customer Feedback": "The plug adapter made a popping sound and tripped my outlet.", "Expected Sentiment": "Negative", "Expected Category": "Safety Concern", "Expected Urgency": "High", "Reason for Label": "Electrical incident requiring urgent action."}, {"ID": "F176", "Name": "Benjamin Mitchell", "Gender": "Male", "Age": 24, "Age Group": "18-24", "Customer Feedback": "The product label does not list ingredients, and I have severe allergies.", "Expected Sentiment": "Negative", "Expected Category": "Safety Concern", "Expected Urgency": "High", "Reason for Label": "Missing safety information with allergy risk."}, {"ID": "F177", "Name": "Samuel Wilson", "Gender": "Male", "Age": 26, "Age Group": "25-34", "Customer Feedback": "The item has a warning sticker, but the online listing did not mention it.", "Expected Sentiment": "Negative", "Expected Category": "Safety Concern", "Expected Urgency": "Medium", "Reason for Label": "Safety disclosure issue without reported injury."}, {"ID": "F178", "Name": "Steven Lopez", "Gender": "Male", "Age": 37, "Age Group": "35-44", "Customer Feedback": "I found a sharp metal shaving inside the package.", "Expected Sentiment": "Negative", "Expected Category": "Safety Concern", "Expected Urgency": "High", "Reason for Label": "Foreign object/sharp hazard in product."}, {"ID": "F179", "Name": "Jason Lewis", "Gender": "Male", "Age": 42, "Age Group": "35-44", "Customer Feedback": "Thank you for carrying this brand; it is hard to find elsewhere.", "Expected Sentiment": "Positive", "Expected Category": "Other", "Expected Urgency": "Low", "Reason for Label": "Positive feedback not tied to listed operational categories."}, {"ID": "F180", "Name": "Jennifer Anderson", "Gender": "Female", "Age": 29, "Age Group": "25-34", "Customer Feedback": "The pickup location staff were friendly even though this was not a delivery order.", "Expected Sentiment": "Positive", "Expected Category": "Other", "Expected Urgency": "Low", "Reason for Label": "Positive in-store/pickup experience outside primary categories."}, {"ID": "F181", "Name": "Barbara Baker", "Gender": "Female", "Age": 29, "Age Group": "25-34", "Customer Feedback": "I like the way your gift wrapping looks.", "Expected Sentiment": "Positive", "Expected Category": "Other", "Expected Urgency": "Low", "Reason for Label": "Positive feedback about optional service."}, {"ID": "F182", "Name": "Jeffrey Davis", "Gender": "Male", "Age": 37, "Age Group": "35-44", "Customer Feedback": "The product sample included in my box was a nice surprise.", "Expected Sentiment": "Positive", "Expected Category": "Other", "Expected Urgency": "Low", "Reason for Label": "Positive miscellaneous feedback."}, {"ID": "F183", "Name": "Karen Jones", "Gender": "Female", "Age": 24, "Age Group": "18-24", "Customer Feedback": "Your return reminder email helped me avoid missing the deadline.", "Expected Sentiment": "Positive", "Expected Category": "Other", "Expected Urgency": "Low", "Reason for Label": "Positive miscellaneous process feedback."}, {"ID": "F184", "Name": "Nicole Mitchell", "Gender": "Female", "Age": 49, "Age Group": "45-54", "Customer Feedback": "The survey after checkout was short and easy.", "Expected Sentiment": "Positive", "Expected Category": "Other", "Expected Urgency": "Low", "Reason for Label": "Positive feedback about survey experience."}, {"ID": "F185", "Name": "Jessica Robinson", "Gender": "Female", "Age": 41, "Age Group": "35-44", "Customer Feedback": "The brand story on your website made the purchase feel more personal.", "Expected Sentiment": "Positive", "Expected Category": "Other", "Expected Urgency": "Low", "Reason for Label": "Positive miscellaneous brand content feedback."}, {"ID": "F186", "Name": "Angela Wright", "Gender": "Female", "Age": 36, "Age Group": "35-44", "Customer Feedback": "The pickup locker opened without any issue.", "Expected Sentiment": "Positive", "Expected Category": "Other", "Expected Urgency": "Low", "Reason for Label": "Positive pickup/locker experience not central to listed categories."}, {"ID": "F187", "Name": "Jeffrey Mitchell", "Gender": "Male", "Age": 29, "Age Group": "25-34", "Customer Feedback": "Can you tell me whether you have a student discount?", "Expected Sentiment": "Neutral", "Expected Category": "Other", "Expected Urgency": "Low", "Reason for Label": "General promotion question best classified as Other."}, {"ID": "F188", "Name": "Richard Anderson", "Gender": "Male", "Age": 78, "Age Group": "65+", "Customer Feedback": "Do you offer corporate ordering for bulk purchases?", "Expected Sentiment": "Neutral", "Expected Category": "Other", "Expected Urgency": "Low", "Reason for Label": "Business ordering question not in main categories."}, {"ID": "F189", "Name": "Jerry Baker", "Gender": "Male", "Age": 54, "Age Group": "45-54", "Customer Feedback": "I want to update my communication preferences.", "Expected Sentiment": "Neutral", "Expected Category": "Other", "Expected Urgency": "Low", "Reason for Label": "Account/preference request outside main issue categories."}, {"ID": "F190", "Name": "Jerry Carter", "Gender": "Male", "Age": 33, "Age Group": "25-34", "Customer Feedback": "Can I add a gift message after placing the order?", "Expected Sentiment": "Neutral", "Expected Category": "Other", "Expected Urgency": "Low", "Reason for Label": "Gift option question not primarily shipping or billing."}, {"ID": "F191", "Name": "Kimberly Lopez", "Gender": "Female", "Age": 71, "Age Group": "65+", "Customer Feedback": "Do you have a physical store near me?", "Expected Sentiment": "Neutral", "Expected Category": "Other", "Expected Urgency": "Low", "Reason for Label": "Store location question."}, {"ID": "F192", "Name": "Elizabeth Walker", "Gender": "Female", "Age": 30, "Age Group": "25-34", "Customer Feedback": "Can someone remove my old address from the account?", "Expected Sentiment": "Neutral", "Expected Category": "Other", "Expected Urgency": "Medium", "Reason for Label": "Account data request outside main categories."}, {"ID": "F193", "Name": "Christine Miller", "Gender": "Female", "Age": 50, "Age Group": "45-54", "Customer Feedback": "The pickup locker screen was hard to read in sunlight.", "Expected Sentiment": "Neutral", "Expected Category": "Other", "Expected Urgency": "Low", "Reason for Label": "Minor pickup experience issue."}, {"ID": "F194", "Name": "Rachel Young", "Gender": "Female", "Age": 31, "Age Group": "25-34", "Customer Feedback": "I accidentally ordered the wrong color and need advice.", "Expected Sentiment": "Neutral", "Expected Category": "Other", "Expected Urgency": "Low", "Reason for Label": "Customer error/advice request not a defect or return yet."}, {"ID": "F195", "Name": "Jacob Garcia", "Gender": "Male", "Age": 30, "Age Group": "25-34", "Customer Feedback": "I keep receiving mail addressed to a previous resident.", "Expected Sentiment": "Negative", "Expected Category": "Other", "Expected Urgency": "Medium", "Reason for Label": "Customer data/address issue outside standard categories."}, {"ID": "F196", "Name": "Tyler Sanchez", "Gender": "Male", "Age": 55, "Age Group": "55-64", "Customer Feedback": "Your marketing text messages come too late at night.", "Expected Sentiment": "Negative", "Expected Category": "Other", "Expected Urgency": "Medium", "Reason for Label": "Communication timing complaint."}, {"ID": "F197", "Name": "Rebecca Brown", "Gender": "Female", "Age": 30, "Age Group": "25-34", "Customer Feedback": "The pickup location closed early and nobody notified me.", "Expected Sentiment": "Negative", "Expected Category": "Other", "Expected Urgency": "Medium", "Reason for Label": "Pickup operations issue outside shipping category."}, {"ID": "F198", "Name": "Samantha Lewis", "Gender": "Female", "Age": 48, "Age Group": "45-54", "Customer Feedback": "My account name is misspelled on every email and I have asked twice to fix it.", "Expected Sentiment": "Negative", "Expected Category": "Other", "Expected Urgency": "Medium", "Reason for Label": "Repeated account/profile issue."}, {"ID": "F199", "Name": "Brenda Rodriguez", "Gender": "Female", "Age": 62, "Age Group": "55-64", "Customer Feedback": "I want all my personal data deleted from your system.", "Expected Sentiment": "Negative", "Expected Category": "Other", "Expected Urgency": "High", "Reason for Label": "Privacy/data deletion request may require escalation."}, {"ID": "F200", "Name": "Jessica Johnson", "Gender": "Female", "Age": 74, "Age Group": "65+", "Customer Feedback": "This company keeps sending me messages after I opted out; I may file a complaint.", "Expected Sentiment": "Negative", "Expected Category": "Other", "Expected Urgency": "High", "Reason for Label": "Escalation/legal complaint language about communications."}];
+
+// ── API KEY — Replace YOUR_API_KEY_HERE with your Anthropic key before presentation
+var ANTHROPIC_API_KEY = 'YOUR_API_KEY_HERE';
+
+// ── UTILS
+function el(id){ return document.getElementById(id); }
+
+Chart.defaults.font.family = "-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif";
+Chart.defaults.font.size = 11;
+Chart.defaults.color = '#9ba3be';
+var GC = 'rgba(46,54,80,0.5)';
+var TC = '#5a6380';
+
+// ── CLOCK
+setInterval(function(){
+  el('clock').textContent = new Date().toLocaleTimeString('en-US',{hour:'2-digit',minute:'2-digit',second:'2-digit'});
+}, 1000);
+
+// ── PAGE NAV
+var PAGES = ['overview','feedback','demographics','urgency','analyze','edit','about','setup'];
+function showPage(name){
+  PAGES.forEach(function(p){
+    el('page-'+p).classList.toggle('active', p===name);
+    el('nav-'+p).classList.toggle('active', p===name);
+  });
+}
+window.addEventListener('DOMContentLoaded', function(){
+  PAGES.forEach(function(p){
+    el('nav-'+p).addEventListener('click', function(){ showPage(p); });
+  });
+  el('brand-link').addEventListener('click', function(){ showPage('overview'); });
+  buildDeptScores();
+  buildOverviewCharts();
+  buildDemoCharts();
+  buildUrgencyPage();
+  buildTable();
+  wireFilters();
+  wireAnalyze();
+  wireEditPage();
+  buildEditTable();
+  // modal close
+  el('modal-close').addEventListener('click', closeModal);
+  el('fb-overlay').addEventListener('click', closeModal);
+  // urgent modal
+  el('view-all-urgent-btn').addEventListener('click', openUrgentModal);
+  el('urgent-modal-close').addEventListener('click', closeUrgentModal);
+  el('urgent-overlay').addEventListener('click', closeUrgentModal);
+  el('urg-filter-cat').addEventListener('change', renderUrgentList);
+  el('urg-filter-gender').addEventListener('change', renderUrgentList);
+  document.addEventListener('keydown', function(e){ if(e.key==='Escape'){ closeModal(); closeUrgentModal(); } });
+});
+
+// ── SHORT LABEL
+function sc(c){
+  return c.replace('/Refunds','').replace(' Issue','').replace(' Feedback','')
+           .replace('Product ','Prod ').replace('Customer ','Cust. ').replace('Website/App','Web/App');
+}
+
+// ── DEPT SCORES
+function buildDeptScores(){
+  var wrap = el('dept-scores-wrap');
+  wrap.innerHTML = '';
+  CATS.forEach(function(cat){
+    var cs = CAT_SENT[cat];
+    var score = Math.round(cs.pos / cs.total * 100);
+    var grade = score>=65?'Strong':score>=45?'Good':score>=30?'Fair':'Needs Work';
+    var col,bg,tc;
+    if(grade==='Strong'){col='#22c55e';bg='rgba(34,197,94,.12)';tc='#4ade80';}
+    else if(grade==='Good'){col='#3b82f6';bg='rgba(59,130,246,.12)';tc='#60a5fa';}
+    else if(grade==='Fair'){col='#f59e0b';bg='rgba(245,158,11,.12)';tc='#fbbf24';}
+    else{col='#ef4444';bg='rgba(239,68,68,.12)';tc='#f87171';}
+    var div = document.createElement('div');
+    div.className = 'dcard';
+    div.innerHTML = '<div class="dname">'+sc(cat)+'</div>'
+      +'<div class="dscore" style="color:'+col+'">'+score+'</div>'
+      +'<div class="dsub">'+cs.total+' items &middot; '+cs.high+' high</div>'
+      +'<div class="dbarbg"><div class="dbarfill" style="width:'+score+'%;background:'+col+'"></div></div>'
+      +'<span class="dbadge" style="background:'+bg+';color:'+tc+'">'+grade+'</span>';
+    wrap.appendChild(div);
+  });
+}
+
+// ── OVERVIEW CHARTS
+function buildOverviewCharts(){
+  var labels = CATS.map(sc);
+  overviewCharts.catSent = new Chart(el('catSentChart'),{type:'bar',data:{labels:labels,datasets:[
+    {label:'Positive',data:CATS.map(function(c){return CAT_SENT[c].pos;}),backgroundColor:'rgba(34,197,94,.8)',borderRadius:4,borderSkipped:false},
+    {label:'Neutral',data:CATS.map(function(c){return CAT_SENT[c].neu;}),backgroundColor:'rgba(59,130,246,.8)',borderRadius:4,borderSkipped:false},
+    {label:'Negative',data:CATS.map(function(c){return CAT_SENT[c].neg;}),backgroundColor:'rgba(239,68,68,.8)',borderRadius:4,borderSkipped:false}
+  ]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},
+    scales:{x:{grid:{color:GC},ticks:{color:TC,font:{size:10},autoSkip:false}},y:{grid:{color:GC},ticks:{color:TC,stepSize:2}}}}});
+
+  overviewCharts.sentDonut = new Chart(el('sentDonut'),{type:'doughnut',data:{
+    labels:['Positive','Neutral','Negative'],
+    datasets:[{data:[60,54,86],backgroundColor:['rgba(34,197,94,.85)','rgba(59,130,246,.85)','rgba(239,68,68,.85)'],borderWidth:0,hoverOffset:6}]
+  },options:{responsive:true,maintainAspectRatio:false,cutout:'70%',plugins:{legend:{display:false}}}});
+
+  overviewCharts.dept = new Chart(el('deptChart'),{type:'bar',data:{labels:labels,datasets:[
+    {label:'Positive',data:CATS.map(function(c){return CAT_SENT[c].pos;}),backgroundColor:'rgba(34,197,94,.8)',borderRadius:3,borderSkipped:false},
+    {label:'Neutral',data:CATS.map(function(c){return CAT_SENT[c].neu;}),backgroundColor:'rgba(59,130,246,.8)',borderRadius:3,borderSkipped:false},
+    {label:'Negative',data:CATS.map(function(c){return CAT_SENT[c].neg;}),backgroundColor:'rgba(239,68,68,.8)',borderRadius:3,borderSkipped:false}
+  ]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},
+    scales:{x:{grid:{color:GC},ticks:{color:TC,font:{size:10},autoSkip:false}},y:{grid:{color:GC},ticks:{color:TC}}}}});
+}
+
+// ── DEMO CHARTS
+function buildDemoCharts(){
+  var mD = DATA.filter(function(d){return d.Gender==='Male';});
+  var fD = DATA.filter(function(d){return d.Gender==='Female';});
+
+  demoCharts.genderDonut = new Chart(el('genderDonut'),{type:'doughnut',data:{
+    labels:['Male','Female'],
+    datasets:[{data:[106,94],backgroundColor:['rgba(59,130,246,.85)','rgba(244,114,182,.85)'],borderWidth:0,hoverOffset:6}]
+  },options:{responsive:true,maintainAspectRatio:false,cutout:'65%',plugins:{legend:{display:false}}}});
+
+  demoCharts.genderSent = new Chart(el('genderSentChart'),{type:'bar',data:{labels:['Male','Female'],datasets:[
+    {label:'Positive',data:[mD.filter(function(d){return d['Expected Sentiment']==='Positive';}).length,fD.filter(function(d){return d['Expected Sentiment']==='Positive';}).length],backgroundColor:'rgba(34,197,94,.8)',borderRadius:5,borderSkipped:false},
+    {label:'Neutral',data:[mD.filter(function(d){return d['Expected Sentiment']==='Neutral';}).length,fD.filter(function(d){return d['Expected Sentiment']==='Neutral';}).length],backgroundColor:'rgba(59,130,246,.8)',borderRadius:5,borderSkipped:false},
+    {label:'Negative',data:[mD.filter(function(d){return d['Expected Sentiment']==='Negative';}).length,fD.filter(function(d){return d['Expected Sentiment']==='Negative';}).length],backgroundColor:'rgba(239,68,68,.8)',borderRadius:5,borderSkipped:false}
+  ]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},
+    scales:{x:{grid:{color:GC},ticks:{color:TC}},y:{grid:{color:GC},ticks:{color:TC}}}}});
+
+  demoCharts.ageSent = new Chart(el('ageSentChart'),{type:'bar',data:{labels:AGE_GROUPS,datasets:[
+    {label:'Positive',data:AGE_GROUPS.map(function(ag){return AGE_SENT[ag].pos;}),backgroundColor:'rgba(34,197,94,.8)',borderRadius:3,borderSkipped:false},
+    {label:'Neutral',data:AGE_GROUPS.map(function(ag){return AGE_SENT[ag].neu;}),backgroundColor:'rgba(59,130,246,.8)',borderRadius:3,borderSkipped:false},
+    {label:'Negative',data:AGE_GROUPS.map(function(ag){return AGE_SENT[ag].neg;}),backgroundColor:'rgba(239,68,68,.8)',borderRadius:3,borderSkipped:false}
+  ]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},
+    scales:{x:{grid:{color:GC},ticks:{color:TC}},y:{grid:{color:GC},ticks:{color:TC}}}}});
+
+  demoCharts.genderCat = new Chart(el('genderCatChart'),{type:'bar',data:{labels:CATS.map(sc),datasets:[
+    {label:'Male',data:CATS.map(function(c){return DATA.filter(function(d){return d['Expected Category']===c&&d.Gender==='Male';}).length;}),backgroundColor:'rgba(59,130,246,.8)',borderRadius:3,borderSkipped:false},
+    {label:'Female',data:CATS.map(function(c){return DATA.filter(function(d){return d['Expected Category']===c&&d.Gender==='Female';}).length;}),backgroundColor:'rgba(244,114,182,.8)',borderRadius:3,borderSkipped:false}
+  ]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},
+    scales:{x:{grid:{color:GC},ticks:{color:TC,font:{size:10},autoSkip:false}},y:{grid:{color:GC},ticks:{color:TC}}}}});
+}
+
+// ── URGENCY PAGE
+function buildUrgencyPage(){
+  var wrap = el('top-urgent-list');
+  wrap.innerHTML = '';
+  TOP_URGENT.forEach(function(d, i){
+    var div = document.createElement('div');
+    div.className = 'urg-item';
+    div.innerHTML = '<div class="urg-num">'+(i+1)+'</div><div class="urg-body">'
+      +'<div class="urg-name">'+d.Name+' <span style="color:var(--text3);font-weight:400;font-size:11px">· '+d.ID+'</span></div>'
+      +'<div class="urg-text">'+d['Customer Feedback']+'</div>'
+      +'<div class="urg-meta"><span class="pill p-high">High Urgency</span>'
+      +'<span class="pill p-cat">'+d['Expected Category']+'</span>'
+      +'<span class="pill p-neg">'+d['Expected Sentiment']+'</span></div></div>';
+    wrap.appendChild(div);
+  });
+
+  overviewCharts.urgDonut = new Chart(el('urgDonut'),{type:'doughnut',data:{
+    labels:['Low','Medium','High'],
+    datasets:[{data:[82,57,61],backgroundColor:['rgba(34,197,94,.85)','rgba(245,158,11,.85)','rgba(239,68,68,.85)'],borderWidth:0,hoverOffset:6}]
+  },options:{responsive:true,maintainAspectRatio:false,cutout:'65%',plugins:{legend:{display:false}}}});
+
+  overviewCharts.urgCat = new Chart(el('urgCatChart'),{type:'bar',data:{labels:CATS.map(sc),datasets:[
+    {label:'Low',data:CATS.map(function(c){return HEATMAP[c].Low;}),backgroundColor:'rgba(34,197,94,.8)',borderRadius:3,borderSkipped:false},
+    {label:'Medium',data:CATS.map(function(c){return HEATMAP[c].Medium;}),backgroundColor:'rgba(245,158,11,.8)',borderRadius:3,borderSkipped:false},
+    {label:'High',data:CATS.map(function(c){return HEATMAP[c].High;}),backgroundColor:'rgba(239,68,68,.8)',borderRadius:3,borderSkipped:false}
+  ]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},
+    scales:{x:{grid:{color:GC},ticks:{color:TC,font:{size:10},autoSkip:false}},y:{grid:{color:GC},ticks:{color:TC}}}}});
+
+  var maxHigh = Math.max.apply(null, CATS.map(function(c){return HEATMAP[c].High;}));
+  var tbody = el('heatmap-body');
+  tbody.innerHTML = '';
+  CATS.forEach(function(cat){
+    var h = HEATMAP[cat];
+    var lowA  = (0.04 + h.Low/10*0.2).toFixed(2);
+    var medA  = (0.04 + h.Medium/10*0.2).toFixed(2);
+    var highA = (0.08 + h.High/maxHigh*0.5).toFixed(2);
+    var tr = document.createElement('tr');
+    tr.innerHTML = '<td style="font-weight:600;color:var(--text);white-space:nowrap">'+cat+'</td>'
+      +'<td><div class="hcell" style="background:rgba(34,197,94,'+lowA+')">'
+        +'<span class="hval" style="color:#4ade80">'+h.Low+'</span>'
+        +'<span class="hlbl" style="color:#4ade80">Low</span></div></td>'
+      +'<td><div class="hcell" style="background:rgba(245,158,11,'+medA+')">'
+        +'<span class="hval" style="color:#fbbf24">'+h.Medium+'</span>'
+        +'<span class="hlbl" style="color:#fbbf24">Med</span></div></td>'
+      +'<td><div class="hcell" style="background:rgba(239,68,68,'+highA+');cursor:pointer" '
+        +'title="Click to filter data table" data-cat="'+cat+'">'
+        +'<span class="hval" style="color:#f87171">'+h.High+'</span>'
+        +'<span class="hlbl" style="color:#f87171">High</span></div></td>'
+      +'<td style="font-weight:600;color:var(--text2)">'+(h.Low+h.Medium+h.High)+'</td>';
+    tbody.appendChild(tr);
+  });
+  tbody.addEventListener('click', function(e){
+    var cell = e.target.closest('[data-cat]');
+    if(cell){
+      var cat = cell.getAttribute('data-cat');
+      el('f-cat').value = cat;
+      el('f-urg').value = 'High';
+      showPage('feedback');
+      renderTable();
+    }
+  });
+}
+
+// ── TABLE
+var currentPage = 1;
+var sortField = 'ID';
+var sortDir = 1;
+var PER_PAGE = 25;
+
+function filteredData(){
+  var s  = el('search').value.toLowerCase();
+  var fs = el('f-sent').value;
+  var fc = el('f-cat').value;
+  var fu = el('f-urg').value;
+  var fg = el('f-gender').value;
+  var fa = el('f-age').value;
+  return DATA.filter(function(d){
+    return (!s || d.ID.toLowerCase().indexOf(s)>-1 || d.Name.toLowerCase().indexOf(s)>-1 || d['Customer Feedback'].toLowerCase().indexOf(s)>-1)
+      && (!fs || d['Expected Sentiment']===fs)
+      && (!fc || d['Expected Category']===fc)
+      && (!fu || d['Expected Urgency']===fu)
+      && (!fg || d.Gender===fg)
+      && (!fa || d['Age Group']===fa);
+  }).sort(function(a,b){
+    var va = a[sortField]||'', vb = b[sortField]||'';
+    if(sortField==='Age'){va=Number(va);vb=Number(vb);}
+    return va<vb ? -sortDir : va>vb ? sortDir : 0;
+  });
+}
+
+function hlText(text, q){
+  if(!q) return text;
+  var idx = text.toLowerCase().indexOf(q); if(idx<0) return text; return text.substring(0,idx)+"<span class=\"hl\">"+text.substring(idx,idx+q.length)+"</span>"+text.substring(idx+q.length);
+  return parts.map(function(p){ return p.toLowerCase()===q ? '<span class="hl">'+p+'</span>' : p; }).join('');
+}
+
+function sentPill(s){ return '<span class="pill '+(s==='Positive'?'p-pos':s==='Negative'?'p-neg':'p-neu')+'">'+s+'</span>'; }
+function urgPill(u){ return '<span class="pill '+(u==='High'?'p-high':u==='Medium'?'p-med':'p-low')+'">'+u+'</span>'; }
+
+function renderTable(){ currentPage=1; buildTable(); }
+
+function buildTable(){
+  var q  = el('search').value.toLowerCase();
+  var fd = filteredData();
+  var total = fd.length;
+  var pages = Math.max(1, Math.ceil(total/PER_PAGE));
+  if(currentPage > pages) currentPage = pages;
+  var slice = fd.slice((currentPage-1)*PER_PAGE, currentPage*PER_PAGE);
+  el('fcount').textContent = total+' record'+(total!==1?'s':'');
+  el('feedback-tbody').innerHTML = slice.map(function(d){
+    var fb = d['Customer Feedback'];
+    return '<tr class="fb-row" data-id="'+d.ID+'" style="cursor:pointer" title="Click to read full feedback">'
+      +'<td class="td-id">'+hlText(d.ID,q)+'</td>'
+      +'<td class="td-name">'+hlText(d.Name,q)+'</td>'
+      +'<td><span class="pill '+(d.Gender==='Male'?'p-m':'p-f')+'">'+d.Gender+'</span></td>'
+      +'<td style="color:var(--text2)">'+d.Age+'</td>'
+      +'<td class="td-fb">'+hlText(fb,q)+' <span style="color:#3b82f6;font-size:10px;margin-left:4px">&#128065; Read</span></td>'
+      +'<td><span class="pill p-cat" style="font-size:9px">'+d['Expected Category']+'</span></td>'
+      +'<td>'+sentPill(d['Expected Sentiment'])+'</td>'
+      +'<td>'+urgPill(d['Expected Urgency'])+'</td>'
+      +'</tr>';
+  }).join('');
+  el('pg-info').textContent = 'Page '+currentPage+' of '+pages+' · '+total+' records';
+  buildPager(pages);
+  // Wire row clicks
+  el('feedback-tbody').querySelectorAll('.fb-row').forEach(function(row){
+    row.addEventListener('click', function(){
+      openModal(row.getAttribute('data-id'));
+    });
+  });
+}
+
+// ── MODAL
+function openModal(id){
+  var d = DATA.find(function(r){ return r.ID === id; });
+  if(!d) return;
+  el('modal-id').textContent = d.ID;
+  el('modal-name').textContent = d.Name;
+  el('modal-gender').textContent = d.Gender;
+  el('modal-age').textContent = d.Age + ' yrs  (' + d['Age Group'] + ')';
+  var sc2 = d['Expected Sentiment']==='Positive'?'#4ade80':d['Expected Sentiment']==='Negative'?'#f87171':'#60a5fa';
+  el('modal-sentiment').textContent = d['Expected Sentiment'];
+  el('modal-sentiment').style.color = sc2;
+  var uc = d['Expected Urgency']==='High'?'#f87171':d['Expected Urgency']==='Medium'?'#fbbf24':'#4ade80';
+  el('modal-urgency').textContent = d['Expected Urgency'];
+  el('modal-urgency').style.color = uc;
+  el('modal-category').textContent = d['Expected Category'];
+  el('modal-feedback').textContent = d['Customer Feedback'];
+  el('modal-reason').textContent = d['Reason for Label'] || '—';
+  var m = el('fb-modal');
+  m.style.display = 'flex';
+  document.body.style.overflow = 'hidden';
+}
+
+function closeModal(){
+  el('fb-modal').style.display = 'none';
+  document.body.style.overflow = '';
+}
+
+// ── URGENT MODAL
+function openUrgentModal(){
+  el('urg-filter-cat').value = '';
+  el('urg-filter-gender').value = '';
+  renderUrgentList();
+  el('urgent-modal').style.display = 'flex';
+  document.body.style.overflow = 'hidden';
+}
+
+function closeUrgentModal(){
+  el('urgent-modal').style.display = 'none';
+  document.body.style.overflow = '';
+}
+
+function renderUrgentList(){
+  var fc = el('urg-filter-cat').value;
+  var fg = el('urg-filter-gender').value;
+  var items = DATA.filter(function(d){
+    return d['Expected Urgency']==='High'
+      && (!fc || d['Expected Category']===fc)
+      && (!fg || d.Gender===fg);
+  });
+  el('urg-count').textContent = items.length+' items';
+  if(items.length===0){
+    el('urgent-list-wrap').innerHTML = '<div style="text-align:center;padding:2rem;color:#5a6380;font-size:13px">No items match the selected filters.</div>';
+    return;
+  }
+  el('urgent-list-wrap').innerHTML = items.map(function(d,i){
+    var catCol = '#c4b5fd';
+    var sentCol = d['Expected Sentiment']==='Positive'?'#4ade80':d['Expected Sentiment']==='Negative'?'#f87171':'#60a5fa';
+    return '<div style="display:flex;gap:12px;padding:13px;background:rgba(239,68,68,.04);border:1px solid rgba(239,68,68,.15);border-radius:10px;margin-bottom:8px;cursor:pointer;transition:background .15s" '
+      +'onmouseover="this.style.background=\'rgba(239,68,68,.09)\'" '
+      +'onmouseout="this.style.background=\'rgba(239,68,68,.04)\'" '
+      +'onclick="closeUrgentModal();openModal(\''+d.ID+'\')">'
+      +'<div style="width:32px;height:32px;border-radius:8px;background:rgba(239,68,68,.15);color:#f87171;font-size:12px;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0">'+(i+1)+'</div>'
+      +'<div style="flex:1;min-width:0">'
+        +'<div style="display:flex;align-items:center;gap:8px;margin-bottom:4px;flex-wrap:wrap">'
+          +'<span style="font-size:12px;font-weight:700;color:#e8eaf0">'+d.Name+'</span>'
+          +'<span style="font-size:10px;color:#5a6380;font-family:monospace">'+d.ID+'</span>'
+          +'<span style="font-size:10px;color:#9ba3be">&middot; '+d.Gender+' &middot; Age '+d.Age+'</span>'
+        +'</div>'
+        +'<div style="font-size:12px;color:#9ba3be;margin-bottom:7px;line-height:1.5">'+d['Customer Feedback']+'</div>'
+        +'<div style="display:flex;gap:6px;flex-wrap:wrap;align-items:center">'
+          +'<span class="pill p-high">High Urgency</span>'
+          +'<span class="pill p-cat">'+d['Expected Category']+'</span>'
+          +'<span class="pill" style="background:rgba(34,197,94,.12);color:'+sentCol+';border:1px solid rgba(255,255,255,.08)">'+d['Expected Sentiment']+'</span>'
+          +'<span style="font-size:10px;color:#5a6380;margin-left:auto">Click to view full details &#8594;</span>'
+        +'</div>'
+      +'</div>'
+      +'</div>';
+  }).join('');
+}
+
+
+
+function buildPager(pages){
+  var w = el('pg-btns');
+  w.innerHTML = '';
+  function mkBtn(label, page, disabled){
+    var b = document.createElement('button');
+    b.className = 'pgbtn'+(page===currentPage?' active':'');
+    b.textContent = label;
+    b.disabled = !!disabled;
+    b.addEventListener('click', function(){ if(!disabled){currentPage=page;buildTable();} });
+    w.appendChild(b);
+  }
+  mkBtn('←', currentPage-1, currentPage===1);
+  for(var i=1; i<=pages; i++){
+    if(pages<=7 || i===1 || i===pages || Math.abs(i-currentPage)<=1){
+      mkBtn(i, i, false);
+    } else if(i===currentPage-2 || i===currentPage+2){
+      var sp = document.createElement('span');
+      sp.textContent = '…'; sp.style.cssText = 'padding:0 4px;color:var(--text3)';
+      w.appendChild(sp);
+    }
+  }
+  mkBtn('→', currentPage+1, currentPage===pages);
+}
+
+function wireFilters(){
+  ['search','f-sent','f-cat','f-urg','f-gender','f-age'].forEach(function(id){
+    el(id).addEventListener('input', renderTable);
+    el(id).addEventListener('change', renderTable);
+  });
+  ['ID','Name','Age','Sent','Urg'].forEach(function(k){
+    var th = el('th-'+k);
+    if(th) th.addEventListener('click', function(){
+      var map = {ID:'ID',Name:'Name',Age:'Age',Sent:'Expected Sentiment',Urg:'Expected Urgency'};
+      var f = map[k];
+      if(sortField===f) sortDir*=-1; else{sortField=f;sortDir=1;}
+      buildTable();
+    });
+  });
+}
+
+// ── ANALYZE
+var SAMPLES = [
+  'My package arrived with the box completely open and two items missing. This is the second time.',
+  'I was charged three times for the same order. I need a full refund immediately.',
+  'The support agent resolved my issue in under 5 minutes and followed up by email. Excellent.',
+  'The toy my child received has sharp loose parts that cut her finger. This is a safety issue.',
+  'The checkout page keeps crashing every time I try to apply my promo code.',
+  'I returned the item 3 weeks ago and still have not received my refund. No one is responding.'
+];
+
+function wireAnalyze(){
+  document.querySelectorAll('.samp-btn').forEach(function(btn){
+    btn.addEventListener('click', function(){
+      el('analyze-input').value = SAMPLES[parseInt(btn.getAttribute('data-i'))];
+    });
+  });
+  el('clear-btn').addEventListener('click', function(){
+    el('analyze-input').value=''; el('ares').innerHTML='';
+  });
+  el('abtn').addEventListener('click', runAnalyze);
+}
+
+var analyzeHistory = [];
+
+function runAnalyze(){
+  var text = el('analyze-input').value.trim();
+  if(!text) return;
+  var btn = el('abtn');
+  btn.innerHTML = '<span class="spin"></span>Classifying...';
+  btn.disabled = true;
+
+  var prompt = 'You are a customer feedback analyst. Analyze this feedback and respond ONLY with valid JSON — no markdown, no explanation.\n'
+    + 'Feedback: "' + text.replace(/\\/g,'\\\\').replace(/"/g,'\\"') + '"\n'
+    + 'Return: {"sentiment":"Positive"|"Neutral"|"Negative","category":"Shipping"|"Product Quality"|"Billing"|"Customer Service"|"Returns/Refunds"|"Website/App Issue"|"General Feedback"|"Safety Concern"|"Other","urgency":"Low"|"Medium"|"High","confidence":"High"|"Medium"|"Low","reasoning":"one sentence","recommended_action":"one sentence for the operations team"}';
+
+  fetch('https://api.anthropic.com/v1/messages',{
+    method:'POST',
+    headers:{'Content-Type':'application/json','x-api-key':ANTHROPIC_API_KEY,'anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true'},
+    body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:500,messages:[{role:'user',content:prompt}]})
+  })
+  .then(function(res){ return res.json(); })
+  .then(function(d){
+    var raw = (d.content||[]).map(function(b){return b.text||'';}).join('').replace(/```json|```/g,'').trim();
+    var r = JSON.parse(raw);
+    var sc2 = r.sentiment==='Positive'?'p-pos':r.sentiment==='Negative'?'p-neg':'p-neu';
+    var uc  = r.urgency==='High'?'p-high':r.urgency==='Medium'?'p-med':'p-low';
+    el('ares').innerHTML = '<div class="rcard">'
+      +'<div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--text3);margin-bottom:12px">Classification Result</div>'
+      +'<div class="rrow">'
+        +'<div class="ri"><label>Sentiment</label><span class="pill '+sc2+'">'+r.sentiment+'</span></div>'
+        +'<div class="ri"><label>Category</label><span class="pill p-cat">'+r.category+'</span></div>'
+        +'<div class="ri"><label>Urgency</label><span class="pill '+uc+'">'+r.urgency+'</span></div>'
+        +'<div class="ri"><label>Confidence</label><span style="font-size:13px;font-weight:700;color:var(--text)">'+r.confidence+'</span></div>'
+      +'</div>'
+      +'<div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--text3);margin-bottom:6px">AI Reasoning</div>'
+      +'<div class="rbox" style="margin-bottom:10px">'+r.reasoning+'</div>'
+      +'<div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--text3);margin-bottom:6px">Recommended Action</div>'
+      +'<div class="rbox">'+r.recommended_action+'</div>'
+      +'</div>';
+    analyzeHistory.unshift({text:text.substring(0,60)+'...',sent:r.sentiment,cat:r.category,urg:r.urgency,conf:r.confidence});
+    el('hist-card').style.display='block';
+    el('hist-tbody').innerHTML = analyzeHistory.slice(0,10).map(function(h){
+      return '<tr><td class="td-fb">'+h.text+'</td><td>'+sentPill(h.sent)+'</td>'
+        +'<td><span class="pill p-cat" style="font-size:9px">'+h.cat+'</span></td>'
+        +'<td>'+urgPill(h.urg)+'</td><td style="color:var(--text2)">'+h.conf+'</td></tr>';
+    }).join('');
+  })
+  .catch(function(e){
+    el('ares').innerHTML = '<div class="rcard" style="border-color:rgba(239,68,68,.3)">'
+      +'<span style="color:#f87171">Classification failed. Please add your Claude API key and try again.</span>'
+      +'<br><small style="color:var(--text3)">'+e.message+'</small></div>';
+  })
+  .finally(function(){
+    btn.innerHTML = 'Analyze with Claude AI';
+    btn.disabled = false;
+  });
+}
+
+// ── EDIT DATA PAGE
+var editPage = 1;
+var editPP = 20;
+var editRowId = null;
+
+function ageGroupFrom(age){
+  var a = parseInt(age);
+  return a<=24?'18-24':a<=34?'25-34':a<=44?'35-44':a<=54?'45-54':a<=64?'55-64':'65+';
+}
+
+function nextId(){
+  var nums = DATA.map(function(d){ return parseInt(d.ID.replace('F','')); });
+  return 'F' + String(Math.max.apply(null,nums)+1).padStart(3,'0');
+}
+
+function editFilteredData(){
+  var s = el('edit-search').value.toLowerCase();
+  var fu = el('edit-f-urg').value;
+  var fc = el('edit-f-cat').value;
+  return DATA.filter(function(d){
+    return (!s||(d.ID.toLowerCase().indexOf(s)>-1||d.Name.toLowerCase().indexOf(s)>-1||d['Customer Feedback'].toLowerCase().indexOf(s)>-1))
+      && (!fu||d['Expected Urgency']===fu)
+      && (!fc||d['Expected Category']===fc);
+  });
+}
+
+function buildEditTable(){
+  var fd = editFilteredData();
+  var total = fd.length;
+  var pages = Math.max(1,Math.ceil(total/editPP));
+  if(editPage>pages) editPage=pages;
+  var slice = fd.slice((editPage-1)*editPP, editPage*editPP);
+  el('edit-count').textContent = total+' records';
+  el('edit-tbody').innerHTML = slice.map(function(d){
+    return '<tr>'
+      +'<td class="td-id">'+d.ID+'</td>'
+      +'<td class="td-name" style="white-space:nowrap">'+d.Name+'</td>'
+      +'<td><span class="pill '+(d.Gender==='Male'?'p-m':'p-f')+'">'+d.Gender+'</span></td>'
+      +'<td style="color:var(--text2)">'+d.Age+'</td>'
+      +'<td class="td-fb" style="max-width:240px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+d['Customer Feedback']+'</td>'
+      +'<td><span class="pill p-cat" style="font-size:9px">'+d['Expected Category']+'</span></td>'
+      +'<td>'+sentPill(d['Expected Sentiment'])+'</td>'
+      +'<td>'+urgPill(d['Expected Urgency'])+'</td>'
+      +'<td style="white-space:nowrap">'
+        +'<button class="edit-btn" data-edit-id="'+d.ID+'" style="background:rgba(59,130,246,.12);border:1px solid rgba(59,130,246,.2);color:#60a5fa;padding:3px 10px;border-radius:6px;font-size:10px;font-weight:600;cursor:pointer;margin-right:5px">Edit</button>'
+        +'<button class="del-btn" data-del-id="'+d.ID+'" style="background:rgba(239,68,68,.1);border:1px solid rgba(239,68,68,.2);color:#f87171;padding:3px 10px;border-radius:6px;font-size:10px;font-weight:600;cursor:pointer">Delete</button>'
+      +'</td>'
+      +'</tr>';
+  }).join('');
+  el('edit-pg-info').textContent = 'Page '+editPage+' of '+pages+' · '+total+' records';
+  buildEditPager(pages);
+}
+
+function buildEditPager(pages){
+  var w = el('edit-pg-btns'); w.innerHTML='';
+  function mkb(l,p,dis){
+    var b=document.createElement('button');
+    b.className='pgbtn'+(p===editPage?' active':'');
+    b.textContent=l; b.disabled=!!dis;
+    b.addEventListener('click',function(){ if(!dis){editPage=p;buildEditTable();} });
+    w.appendChild(b);
+  }
+  mkb('←',editPage-1,editPage===1);
+  for(var i=1;i<=pages;i++){
+    if(pages<=6||i===1||i===pages||Math.abs(i-editPage)<=1) mkb(i,i,false);
+    else if(i===editPage-2||i===editPage+2){var sp=document.createElement('span');sp.textContent='…';sp.style.cssText='padding:0 4px;color:var(--text3)';w.appendChild(sp);}
+  }
+  mkb('→',editPage+1,editPage===pages);
+}
+
+function addRecord(){
+  var name = el('e-name').value.trim();
+  var gender = el('e-gender').value;
+  var age = parseInt(el('e-age').value);
+  var fb = el('e-feedback').value.trim();
+  var sent = el('e-sent').value;
+  var cat = el('e-cat').value;
+  var urg = el('e-urg').value;
+  if(!name||!gender||!age||!fb||!sent||!cat||!urg){
+    el('edit-msg').textContent='Please fill in all fields.';
+    el('edit-msg').style.color='#f87171'; return;
+  }
+  DATA.push({
+    ID: nextId(), Name: name, Gender: gender, Age: age,
+    'Age Group': ageGroupFrom(age),
+    'Customer Feedback': fb,
+    'Expected Sentiment': sent,
+    'Expected Category': cat,
+    'Expected Urgency': urg,
+    'Reason for Label': 'Added manually by team member.'
+  });
+  el('e-name').value=''; el('e-gender').value=''; el('e-age').value='';
+  el('e-feedback').value=''; el('e-sent').value=''; el('e-cat').value=''; el('e-urg').value='';
+  el('edit-msg').textContent='Record added successfully! Total: '+DATA.length+' records.';
+  el('edit-msg').style.color='#4ade80';
+  refreshAll();
+  setTimeout(function(){ el('edit-msg').textContent=''; },3000);
+}
+
+// ── CUSTOM CONFIRM (replaces window.confirm which is blocked in iframes/Google Drive)
+function customConfirm(title, msg, onYes){
+  var modal = el('confirm-modal');
+  el('confirm-title').textContent = title;
+  el('confirm-msg').textContent = msg;
+  modal.style.display = 'flex';
+  document.body.style.overflow = 'hidden';
+  function cleanup(){ modal.style.display='none'; document.body.style.overflow=''; }
+  el('confirm-yes').onclick = function(){ cleanup(); onYes(); };
+  el('confirm-no').onclick  = function(){ cleanup(); };
+}
+
+function deleteRow(id){
+  customConfirm(
+    'Delete record ' + id + '?',
+    'This record will be permanently removed from this session. This cannot be undone.',
+    function(){
+      var idx = DATA.findIndex(function(d){ return d.ID===id; });
+      if(idx>-1) DATA.splice(idx,1);
+      refreshAll();
+      renderTable();
+    }
+  );
+}
+
+function openEditRow(id){
+  var d = DATA.find(function(r){ return r.ID===id; });
+  if(!d) return;
+  editRowId = id;
+  el('edit-row-id').textContent = id;
+  el('er-name').value = d.Name;
+  el('er-gender').value = d.Gender;
+  el('er-age').value = d.Age;
+  el('er-feedback').value = d['Customer Feedback'];
+  el('er-sent').value = d['Expected Sentiment'];
+  el('er-cat').value = d['Expected Category'];
+  el('er-urg').value = d['Expected Urgency'];
+  el('edit-row-modal').style.display='flex';
+  document.body.style.overflow='hidden';
+}
+
+function saveEditRow(){
+  var d = DATA.find(function(r){ return r.ID===editRowId; });
+  if(!d) return;
+  d.Name = el('er-name').value.trim()||d.Name;
+  d.Gender = el('er-gender').value;
+  d.Age = parseInt(el('er-age').value)||d.Age;
+  d['Age Group'] = ageGroupFrom(d.Age);
+  d['Customer Feedback'] = el('er-feedback').value.trim()||d['Customer Feedback'];
+  d['Expected Sentiment'] = el('er-sent').value;
+  d['Expected Category'] = el('er-cat').value;
+  d['Expected Urgency'] = el('er-urg').value;
+  el('edit-row-modal').style.display='none';
+  document.body.style.overflow='';
+  refreshAll();
+  renderTable();
+}
+
+function wireEditPage(){
+  el('add-record-btn').addEventListener('click', addRecord);
+  // Single permanent event delegation — registered once, works for all dynamically rebuilt rows
+  el('edit-tbody').addEventListener('click', function(e){
+    var editBtn = e.target.closest('.edit-btn');
+    var delBtn  = e.target.closest('.del-btn');
+    if(editBtn) openEditRow(editBtn.getAttribute('data-edit-id'));
+    if(delBtn)  deleteRow(delBtn.getAttribute('data-del-id'));
+  });
+  el('edit-search').addEventListener('input', function(){ editPage=1; buildEditTable(); });
+  el('edit-f-urg').addEventListener('change', function(){ editPage=1; buildEditTable(); });
+  el('edit-f-cat').addEventListener('change', function(){ editPage=1; buildEditTable(); });
+  el('edit-row-close').addEventListener('click', function(){ el('edit-row-modal').style.display='none'; document.body.style.overflow=''; });
+  el('edit-row-overlay').addEventListener('click', function(){ el('edit-row-modal').style.display='none'; document.body.style.overflow=''; });
+  el('er-save').addEventListener('click', saveEditRow);
+  el('er-cancel').addEventListener('click', function(){ el('edit-row-modal').style.display='none'; document.body.style.overflow=''; });
+}
+
+
+// Chart references — populated by build functions
+var overviewCharts = {};
+var demoCharts = {};
+
+// ── LIVE REFRESH — recomputes everything from DATA after any edit/add/delete
+
+function recomputeStats(){
+  var total = DATA.length;
+  var pos   = DATA.filter(function(d){ return d['Expected Sentiment']==='Positive'; }).length;
+  var neu   = DATA.filter(function(d){ return d['Expected Sentiment']==='Neutral';  }).length;
+  var neg   = DATA.filter(function(d){ return d['Expected Sentiment']==='Negative'; }).length;
+  var high  = DATA.filter(function(d){ return d['Expected Urgency']==='High';   }).length;
+  var med   = DATA.filter(function(d){ return d['Expected Urgency']==='Medium'; }).length;
+  var low   = DATA.filter(function(d){ return d['Expected Urgency']==='Low';    }).length;
+  var male  = DATA.filter(function(d){ return d.Gender==='Male';   }).length;
+  var female= DATA.filter(function(d){ return d.Gender==='Female'; }).length;
+  var health= total>0 ? Math.round(pos/total*100) : 0;
+  var posPct= total>0 ? Math.round(pos/total*100) : 0;
+  var neuPct= total>0 ? Math.round(neu/total*100) : 0;
+  var negPct= total>0 ? Math.round(neg/total*100) : 0;
+
+  // KPI cards
+  el('kpi-total').textContent   = total;
+  el('kpi-pos').textContent     = pos;
+  el('kpi-neu').textContent     = neu;
+  el('kpi-neg').textContent     = neg;
+  el('kpi-high').textContent    = high;
+  el('kpi-health').textContent  = health;
+  el('kpi-pos-pct').textContent = posPct+'%';
+  el('kpi-neu-pct').textContent = neuPct+'%';
+  el('kpi-neg-pct').textContent = negPct+'%';
+  el('kpi-high-pct').textContent= Math.round(high/total*100)+'%';
+
+  // Sentiment legend
+  el('leg-pos').textContent = pos+' ('+posPct+'%)';
+  el('leg-neu').textContent = neu+' ('+neuPct+'%)';
+  el('leg-neg').textContent = neg+' ('+negPct+'%)';
+
+  // Demographics KPIs
+  el('kpi-d-total').textContent  = total;
+  el('kpi-d-male').textContent   = male;
+  el('kpi-d-female').textContent = female;
+  el('kpi-d-male-pct').textContent   = total>0?Math.round(male/total*100)+'%':'0%';
+  el('kpi-d-female-pct').textContent = total>0?Math.round(female/total*100)+'%':'0%';
+  var maleCard  = el('kpi-d-male-card');
+  var femCard   = el('kpi-d-female-card');
+  if(maleCard)  maleCard.textContent  = total>0?Math.round(male/total*100)+'%':'0%';
+  if(femCard)   femCard.textContent   = total>0?Math.round(female/total*100)+'%':'0%';
+
+  // Top pill badge in topbar
+  el('total-pill').textContent = total+' RECORDS';
+
+  // Hero subtitle
+  el('hero-sub').textContent = total+' labeled records \u00b7 9 categories \u00b7 3-tier urgency \u00b7 Zero-shot LLM classification via Claude API';
+  el('fb-hero-sub').textContent = 'All '+total+' records \u00b7 search by ID (F001), name, or keyword \u00b7 filter & sort any column';
+
+  // Urgency progress bars
+  if(total>0){
+    el('urg-low-bar').style.width  = Math.round(low/total*100)+'%';
+    el('urg-med-bar').style.width  = Math.round(med/total*100)+'%';
+    el('urg-high-bar').style.width = Math.round(high/total*100)+'%';
+    el('urg-low-lbl').textContent  = low+' items ('+Math.round(low/total*100)+'%)';
+    el('urg-med-lbl').textContent  = med+' items ('+Math.round(med/total*100)+'%)';
+    el('urg-high-lbl').textContent = high+' items ('+Math.round(high/total*100)+'%)';
+  }
+  var vab = el('view-all-urgent-btn'); if(vab) vab.textContent = 'View All '+high+' Urgent Cases \u2192';
+  var umc = el('urg-modal-count'); if(umc) umc.textContent = high;
+
+  // Age rows
+  var AGS = ['18-24','25-34','35-44','45-54','55-64','65+'];
+  var ageCounts = AGS.map(function(ag){ return DATA.filter(function(d){ return d['Age Group']===ag; }).length; });
+  var maxAge = Math.max.apply(null, ageCounts)||1;
+  AGS.forEach(function(ag, i){
+    var cnt = ageCounts[i];
+    var pct = total>0 ? Math.round(cnt/total*100) : 0;
+    var barEl  = el('age-bar-'+i);
+    var numEl  = el('age-num-'+i);
+    if(barEl) barEl.style.width = Math.round(cnt/maxAge*100)+'%';
+    if(numEl) numEl.textContent = cnt+' \u00b7 '+pct+'%';
+  });
+
+  // Peak age group for demographics KPI
+  var peakIdx = ageCounts.indexOf(Math.max.apply(null,ageCounts));
+  el('kpi-d-peak').textContent = AGS[peakIdx];
+  el('kpi-d-peak-sub').textContent = ageCounts[peakIdx]+' customers ('+Math.round(ageCounts[peakIdx]/total*100)+'%)';
+
+  // Gender split cards
+  el('gender-male-big').textContent   = male;
+  el('gender-female-big').textContent = female;
+  el('gender-male-pct').textContent   = 'MALE \u00b7 '+(total>0?Math.round(male/total*100):0)+'%';
+  el('gender-female-pct').textContent = 'FEMALE \u00b7 '+(total>0?Math.round(female/total*100):0)+'%';
+
+  // Category bar rows
+  var catColors = ['#1D9E75','#7F77DD','#BA7517','#378ADD','#639922','#D4622A','#185FA5','#E24B4A','#9aa0ad'];
+  CATS.forEach(function(cat, i){
+    var cnt = DATA.filter(function(d){ return d['Expected Category']===cat; }).length;
+    var pct = total>0?Math.round(cnt/total*100):0;
+    var barEl = el('cat-bar-'+i);
+    var numEl = el('cat-num-'+i);
+    var pctEl = el('cat-pct-'+i);
+    // max cat count for relative bar widths
+    if(barEl) barEl.style.width = Math.round(cnt/Math.max(1,total/CATS.length*2)*100)+'%';
+    if(numEl) numEl.textContent = cnt;
+    if(pctEl) pctEl.textContent = pct+'%';
+  });
+
+  return {total:total, pos:pos, neu:neu, neg:neg, high:high, med:med, low:low, male:male, female:female};
+}
+
+function refreshCharts(stats){
+  var labels = CATS.map(sc);
+  var pos = CATS.map(function(c){ return DATA.filter(function(d){ return d['Expected Category']===c && d['Expected Sentiment']==='Positive'; }).length; });
+  var neu = CATS.map(function(c){ return DATA.filter(function(d){ return d['Expected Category']===c && d['Expected Sentiment']==='Neutral';  }).length; });
+  var neg = CATS.map(function(c){ return DATA.filter(function(d){ return d['Expected Category']===c && d['Expected Sentiment']==='Negative'; }).length; });
+  var low = CATS.map(function(c){ return DATA.filter(function(d){ return d['Expected Category']===c && d['Expected Urgency']==='Low';    }).length; });
+  var med = CATS.map(function(c){ return DATA.filter(function(d){ return d['Expected Category']===c && d['Expected Urgency']==='Medium'; }).length; });
+  var hig = CATS.map(function(c){ return DATA.filter(function(d){ return d['Expected Category']===c && d['Expected Urgency']==='High';   }).length; });
+
+  // Update overview charts
+  if(overviewCharts.catSent){ overviewCharts.catSent.data.datasets[0].data=pos; overviewCharts.catSent.data.datasets[1].data=neu; overviewCharts.catSent.data.datasets[2].data=neg; overviewCharts.catSent.update(); }
+  if(overviewCharts.sentDonut){ overviewCharts.sentDonut.data.datasets[0].data=[stats.pos,stats.neu,stats.neg]; overviewCharts.sentDonut.update(); }
+  if(overviewCharts.dept){ overviewCharts.dept.data.datasets[0].data=pos; overviewCharts.dept.data.datasets[1].data=neu; overviewCharts.dept.data.datasets[2].data=neg; overviewCharts.dept.update(); }
+
+  // Urgency charts
+  if(overviewCharts.urgDonut){ overviewCharts.urgDonut.data.datasets[0].data=[stats.low,stats.med,stats.high]; overviewCharts.urgDonut.update(); }
+  if(overviewCharts.urgCat){ overviewCharts.urgCat.data.datasets[0].data=low; overviewCharts.urgCat.data.datasets[1].data=med; overviewCharts.urgCat.data.datasets[2].data=hig; overviewCharts.urgCat.update(); }
+
+  // Demo charts
+  var mD = DATA.filter(function(d){ return d.Gender==='Male';   });
+  var fD = DATA.filter(function(d){ return d.Gender==='Female'; });
+  if(demoCharts.genderDonut){ demoCharts.genderDonut.data.datasets[0].data=[stats.male,stats.female]; demoCharts.genderDonut.update(); }
+  if(demoCharts.genderSent){
+    demoCharts.genderSent.data.datasets[0].data=[mD.filter(function(d){return d['Expected Sentiment']==='Positive';}).length, fD.filter(function(d){return d['Expected Sentiment']==='Positive';}).length];
+    demoCharts.genderSent.data.datasets[1].data=[mD.filter(function(d){return d['Expected Sentiment']==='Neutral'; }).length, fD.filter(function(d){return d['Expected Sentiment']==='Neutral'; }).length];
+    demoCharts.genderSent.data.datasets[2].data=[mD.filter(function(d){return d['Expected Sentiment']==='Negative';}).length, fD.filter(function(d){return d['Expected Sentiment']==='Negative';}).length];
+    demoCharts.genderSent.update();
+  }
+  var AGS = ['18-24','25-34','35-44','45-54','55-64','65+'];
+  if(demoCharts.ageSent){
+    demoCharts.ageSent.data.datasets[0].data=AGS.map(function(ag){ return DATA.filter(function(d){ return d['Age Group']===ag&&d['Expected Sentiment']==='Positive'; }).length; });
+    demoCharts.ageSent.data.datasets[1].data=AGS.map(function(ag){ return DATA.filter(function(d){ return d['Age Group']===ag&&d['Expected Sentiment']==='Neutral';  }).length; });
+    demoCharts.ageSent.data.datasets[2].data=AGS.map(function(ag){ return DATA.filter(function(d){ return d['Age Group']===ag&&d['Expected Sentiment']==='Negative'; }).length; });
+    demoCharts.ageSent.update();
+  }
+  if(demoCharts.genderCat){
+    demoCharts.genderCat.data.datasets[0].data=CATS.map(function(c){ return DATA.filter(function(d){ return d['Expected Category']===c&&d.Gender==='Male';   }).length; });
+    demoCharts.genderCat.data.datasets[1].data=CATS.map(function(c){ return DATA.filter(function(d){ return d['Expected Category']===c&&d.Gender==='Female'; }).length; });
+    demoCharts.genderCat.update();
+  }
+
+  // Rebuild heatmap
+  rebuildHeatmap();
+  // Rebuild dept scores
+  buildDeptScores();
+  // Rebuild edit table so count stays current
+  buildEditTable();
+}
+
+function refreshAll(){
+  var stats = recomputeStats();
+  refreshCharts(stats);
+  buildEditTable();
+}
+
+function rebuildHeatmap(){
+  var maxHigh = Math.max.apply(null, CATS.map(function(c){ return DATA.filter(function(d){ return d['Expected Category']===c&&d['Expected Urgency']==='High'; }).length; }))||1;
+  var tbody = el('heatmap-body');
+  tbody.innerHTML = '';
+  CATS.forEach(function(cat){
+    var lo = DATA.filter(function(d){ return d['Expected Category']===cat&&d['Expected Urgency']==='Low';    }).length;
+    var me = DATA.filter(function(d){ return d['Expected Category']===cat&&d['Expected Urgency']==='Medium'; }).length;
+    var hi = DATA.filter(function(d){ return d['Expected Category']===cat&&d['Expected Urgency']==='High';   }).length;
+    var lowA  = (0.04+lo/10*0.2).toFixed(2);
+    var medA  = (0.04+me/10*0.2).toFixed(2);
+    var highA = (0.08+hi/maxHigh*0.5).toFixed(2);
+    var tr = document.createElement('tr');
+    tr.innerHTML = '<td style="font-weight:600;color:var(--text);white-space:nowrap">'+cat+'</td>'
+      +'<td><div class="hcell" style="background:rgba(34,197,94,'+lowA+')">'
+        +'<span class="hval" style="color:#4ade80">'+lo+'</span>'
+        +'<span class="hlbl" style="color:#4ade80">Low</span></div></td>'
+      +'<td><div class="hcell" style="background:rgba(245,158,11,'+medA+')">'
+        +'<span class="hval" style="color:#fbbf24">'+me+'</span>'
+        +'<span class="hlbl" style="color:#fbbf24">Med</span></div></td>'
+      +'<td><div class="hcell" style="background:rgba(239,68,68,'+highA+');cursor:pointer" '
+        +'title="Click to filter data table" data-cat="'+cat+'">'
+        +'<span class="hval" style="color:#f87171">'+hi+'</span>'
+        +'<span class="hlbl" style="color:#f87171">High</span></div></td>'
+      +'<td style="font-weight:600;color:var(--text2)">'+(lo+me+hi)+'</td>';
+    tbody.appendChild(tr);
+  });
+  tbody.addEventListener('click', function(e){
+    var cell = e.target.closest('[data-cat]');
+    if(cell){ el('f-cat').value=cell.getAttribute('data-cat'); el('f-urg').value='High'; showPage('feedback'); renderTable(); }
+  });
+}
+
+</script>
+</body>
+</html>
+<!-- Custom confirm dialog — replaces window.confirm() which is blocked in iframes -->
+<div id="confirm-modal" style="display:none;position:fixed;inset:0;z-index:2000;align-items:center;justify-content:center;padding:1.5rem">
+  <div style="position:absolute;inset:0;background:rgba(0,0,0,.8);backdrop-filter:blur(4px)"></div>
+  <div style="position:relative;background:#1c2030;border:1px solid #3a4468;border-radius:14px;width:100%;max-width:400px;padding:1.75rem;box-shadow:0 24px 60px rgba(0,0,0,.7);text-align:center">
+    <div style="width:48px;height:48px;border-radius:50%;background:rgba(239,68,68,.15);display:flex;align-items:center;justify-content:center;margin:0 auto 14px">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#f87171" stroke-width="2.5"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+    </div>
+    <div id="confirm-title" style="font-size:15px;font-weight:700;color:#e8eaf0;margin-bottom:8px">Delete record?</div>
+    <div id="confirm-msg" style="font-size:12px;color:#9ba3be;line-height:1.6;margin-bottom:1.5rem">This cannot be undone in this session.</div>
+    <div style="display:flex;gap:10px;justify-content:center">
+      <button id="confirm-yes" style="background:linear-gradient(135deg,#ef4444,#b91c1c);border:none;color:#fff;font-size:13px;font-weight:700;padding:9px 24px;border-radius:8px;cursor:pointer;min-width:100px">Delete</button>
+      <button id="confirm-no" style="background:#222738;border:1px solid #2e3650;color:#9ba3be;font-size:13px;font-weight:600;padding:9px 24px;border-radius:8px;cursor:pointer;min-width:100px">Cancel</button>
+    </div>
+  </div>
+</div>
